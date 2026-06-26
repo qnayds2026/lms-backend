@@ -1,8 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+enum UserRole {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  name     String
+  email    String  @unique
+  phone    String? @unique
+  password String
+
+  role     UserRole @default(STUDENT)
+  isActive Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+}
+
+model Course {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String? @db.Text
+  thumbnail   String?
+  price       Decimal @db.Decimal(10, 2)
+  isPublished Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  instructorId Int
+  instructor   User @relation(fields: [instructorId], references: [id])
+
+  modules CourseModule[]
+
+  @@index([instructorId]) // Better query performance
+}
+
+model CourseModule {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+  position    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id])
+
+  @@index([courseId]) // Better query performance
 }
