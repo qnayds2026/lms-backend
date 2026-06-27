@@ -13,12 +13,18 @@ enum UserRole {
   STUDENT
 }
 
+enum LiveClassStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+}
+
 model User {
   id Int @id @default(autoincrement())
 
   name     String
   email    String  @unique
-  phone    String? @unique
+  phone    String?
   password String
 
   role     UserRole @default(STUDENT)
@@ -27,7 +33,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  courses Course[]
+  courses     Course[]
+  liveClasses LiveClass[]
 }
 
 model Course {
@@ -44,7 +51,8 @@ model Course {
   instructorId Int
   instructor   User @relation(fields: [instructorId], references: [id])
 
-  modules CourseModule[]
+  modules     CourseModule[]
+  liveClasses LiveClass[]
 
   @@index([instructorId]) // Better query performance
 }
@@ -61,5 +69,50 @@ model CourseModule {
   courseId Int
   course   Course @relation(fields: [courseId], references: [id])
 
-  @@index([courseId]) // Better query performance
+  recordings Recording[]
+
+  @@index([courseId])
+}
+
+model Recording {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+  videoUrl    String
+  duration    Int?
+  position    Int
+
+  isPublished Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  moduleId Int
+  module   CourseModule @relation(fields: [moduleId], references: [id])
+
+  @@index([moduleId])
+}
+
+model LiveClass {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+
+  meetLink String?
+
+  scheduledAt DateTime
+
+  status LiveClassStatus @default(SCHEDULED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  instructorId Int
+  courseId     Int
+
+  instructor User   @relation(fields: [instructorId], references: [id])
+  course     Course @relation(fields: [courseId], references: [id])
+
+  @@index([instructorId])
+  @@index([courseId])
 }
