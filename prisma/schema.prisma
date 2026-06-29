@@ -19,6 +19,13 @@ enum LiveClassStatus {
   ENDED
 }
 
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 model User {
   id Int @id @default(autoincrement())
 
@@ -33,8 +40,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  courses     Course[]
+  courses     Course[]     @relation("InstructorCourses")
   liveClasses LiveClass[]
+  enrollments Enrollment[]
 }
 
 model Course {
@@ -49,10 +57,11 @@ model Course {
   updatedAt DateTime @updatedAt
 
   instructorId Int
-  instructor   User @relation(fields: [instructorId], references: [id])
+  instructor   User @relation("InstructorCourses", fields: [instructorId], references: [id])
 
   modules     CourseModule[]
   liveClasses LiveClass[]
+  enrollments Enrollment[]
 
   @@index([instructorId]) // Better query performance
 }
@@ -115,4 +124,21 @@ model LiveClass {
 
   @@index([instructorId])
   @@index([courseId])
+}
+
+model Enrollment {
+  id Int @id @default(autoincrement())
+
+  studentId Int
+  student   User @relation(fields: [studentId], references: [id])
+
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id])
+
+  status EnrollmentStatus @default(PENDING)
+
+  enrolledAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([studentId, courseId])
 }
