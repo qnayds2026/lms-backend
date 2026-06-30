@@ -24,7 +24,7 @@ const getAllCourses = async (req, res) => {
   try {
     const courses = await prisma.course.findMany({
       where: { isPublished: true },
-      include: { instructor: { select: { id: true, name: true, avatar: true } } },
+      include: { instructor: { select: { id: true, name: true} } },
     });
     res.json(courses);
   } catch (err) {
