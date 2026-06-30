@@ -63,6 +63,85 @@ const createEnrollment = async (studentId, courseId) => {
   return enrollment;
 };
 
+const getMyCourses = async (studentId) => {
+  const enrollments = await prisma.enrollment.findMany({
+    where: {
+      studentId,
+      status: "ACTIVE",
+    },
+    include: {
+      course: true,
+    },
+  });
+
+  return enrollments;
+};
+
+const updateEnrollmentStatus = async (enrollmentId, status) => {
+  const enrollment = await prisma.enrollment.findUnique({
+    where: {
+      id: Number(enrollmentId),
+    },
+  });
+
+  if (!enrollment) {
+    throw new Error("Enrollment not found");
+  }
+
+  const updatedEnrollment = await prisma.enrollment.update({
+    where: {
+      id: Number(enrollmentId),
+    },
+    data: {
+      status,
+    },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      course: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+    },
+  });
+
+  return updatedEnrollment;
+};
+
+const getAllEnrollments = async () => {
+  return await prisma.enrollment.findMany({
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      course: {
+        select: {
+          id: true,
+          title: true,
+          price: true,
+        },
+      },
+    },
+    orderBy: {
+      enrolledAt: "desc",
+    },
+  });
+};
+
 module.exports = {
   createEnrollment,
+  getMyCourses,
+  updateEnrollmentStatus,
+  getAllEnrollments
 };

@@ -11,5 +11,23 @@ router.post(
   roleMiddleware("STUDENT"),
   enrollmentController.create,
 );
+router.get(
+  "/my-courses",
+  authMiddleware,
+  roleMiddleware("STUDENT"),
+  enrollmentController.myCourses,
+);
+router.get(
+  "/",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  enrollmentController.getAll,
+);
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  enrollmentController.updateStatus,
+);
 
 module.exports = router;
