@@ -26,6 +26,12 @@ enum EnrollmentStatus {
   CANCELLED
 }
 
+enum MeetingPlatform {
+  ZOOM
+  GOOGLE_MEET
+  MANUAL
+}
+
 model User {
   id Int @id @default(autoincrement())
 
@@ -33,7 +39,6 @@ model User {
   email    String  @unique
   phone    String?
   password String
-
   role     UserRole @default(STUDENT)
   isActive Boolean  @default(true)
 
@@ -63,7 +68,7 @@ model Course {
   liveClasses LiveClass[]
   enrollments Enrollment[]
 
-  @@index([instructorId]) // Better query performance
+  @@index([instructorId])
 }
 
 model CourseModule {
@@ -107,11 +112,13 @@ model LiveClass {
   title       String
   description String?
 
-  meetLink String?
+  platform     MeetingPlatform
+  meetLink     String?
+  meetingId    String?
+  recordingUrl String?
 
   scheduledAt DateTime
-
-  status LiveClassStatus @default(SCHEDULED)
+  status      LiveClassStatus @default(SCHEDULED)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

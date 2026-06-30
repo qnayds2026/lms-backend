@@ -1,4 +1,5 @@
 const roleMiddleware = (...roles) => {
+  const flatRoles = roles.flat();
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -7,7 +8,7 @@ const roleMiddleware = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!flatRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: "Forbidden",
