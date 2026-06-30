@@ -4,6 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const authRoutes = require("./src/routes/auth.routes.js");
+const enrollmentRoutes = require("./src/routes/enrollment.routes.js")
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
 app.use("/api/auth", authRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
 
 const PORT = process.env.PORT || 3000;
 
