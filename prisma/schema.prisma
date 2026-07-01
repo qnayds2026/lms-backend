@@ -32,11 +32,22 @@ enum MeetingPlatform {
   MANUAL
 }
 
+enum PaymentMethod {
+  MANUAL
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id Int @id @default(autoincrement())
 
   name     String
-  email    String  @unique
+  email    String   @unique
   phone    String?
   password String
   role     UserRole @default(STUDENT)
@@ -48,6 +59,7 @@ model User {
   courses     Course[]     @relation("InstructorCourses")
   liveClasses LiveClass[]
   enrollments Enrollment[]
+  payments    Payment[]
 }
 
 model Course {
@@ -67,6 +79,7 @@ model Course {
   modules     CourseModule[]
   liveClasses LiveClass[]
   enrollments Enrollment[]
+  payments    Payment[]
 
   @@index([instructorId])
 }
@@ -148,4 +161,29 @@ model Enrollment {
   updatedAt  DateTime @updatedAt
 
   @@unique([studentId, courseId])
+}
+
+model Payment {
+  id Int @id @default(autoincrement())
+
+  amount Decimal @db.Decimal(10, 2)
+
+  paymentMethod PaymentMethod
+  status        PaymentStatus @default(PENDING)
+
+  transactionId String? @unique
+
+  proofImage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentId Int
+  student   User @relation(fields: [studentId], references: [id])
+
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id])
+
+  @@index([studentId])
+  @@index([courseId])
 }
