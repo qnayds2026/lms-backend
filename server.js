@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const authRoutes = require("./src/routes/auth.routes.js");
 const enrollmentRoutes = require("./src/routes/enrollment.routes.js");
+const paymentRoutes = require("./src/routes/payment.routes.js");
 
 const courseRoutes = require("./src/routes/course.routes.js");
 const liveclassRoutes = require("./src/routes/liveclass.routes.js");
@@ -27,6 +28,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/liveclasses", liveclassRoutes);
 
