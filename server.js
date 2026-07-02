@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const authRoutes = require("./src/routes/auth.routes.js");
 const enrollmentRoutes = require("./src/routes/enrollment.routes.js");
+const paymentRoutes = require("./src/routes/payment.routes.js");
 
 const courseRoutes = require("./src/routes/course.routes.js");
 const liveclassRoutes = require("./src/routes/liveclass.routes.js");
@@ -16,6 +17,10 @@ const app = express();
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" })
+);
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("combined"));
@@ -27,6 +32,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/liveclasses", liveclassRoutes);
 
