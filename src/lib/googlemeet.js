@@ -38,6 +38,12 @@ async function createGoogleMeetEvent(title, startTime, durationMinutes = 60) {
     },
   });
 
+  if (!res.data.hangoutLink || !res.data.id) {
+    throw new Error(
+      "Google Calendar did not return a Meet link — conference creation may still be provisioning"
+    );
+  }
+
   return {
     meetLink: res.data.hangoutLink,
     eventId: res.data.id,

@@ -19,13 +19,27 @@ async function createLiveClass(req, res) {
       return res.status(400).json({ error: "platform must be ZOOM, GOOGLE_MEET, or MANUAL" });
     }
 
+    const parsedCourseId = parseInt(courseId);
+    if (isNaN(parsedCourseId)) {
+      return res.status(400).json({ error: "courseId must be a valid number" });
+    }
+
     const startTime = new Date(scheduledAt);
+    if (isNaN(startTime.getTime())) {
+      return res.status(400).json({ error: "scheduledAt must be a valid date" });
+    }
+
     const duration = durationMinutes || 60;
+
+    // Confirm course exists before doing any external API calls
+    const course = await prisma.course.findUnique({ where: { id: parsedCourseId } });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
 
     let meetLink, meetingId;
 
     if (platform === "MANUAL") {
-      // Fallback: instructor pastes their own link, no API call made
       if (!manualLink || !manualLink.trim()) {
         return res.status(400).json({ error: "meetLink is required when platform is MANUAL" });
       }
@@ -64,7 +78,7 @@ async function createLiveClass(req, res) {
         meetLink,
         meetingId,
         scheduledAt: startTime,
-        courseId: parseInt(courseId),
+        courseId: parsedCourseId,
         instructorId,
       },
     });
@@ -80,8 +94,13 @@ async function createLiveClass(req, res) {
 async function getLiveClassesByCourse(req, res) {
   try {
     const { courseId } = req.params;
+    const parsedCourseId = parseInt(courseId);
+    if (isNaN(parsedCourseId)) {
+      return res.status(400).json({ error: "courseId must be a valid number" });
+    }
+
     const liveClasses = await prisma.liveClass.findMany({
-      where: { courseId: parseInt(courseId) },
+      where: { courseId: parsedCourseId },
       orderBy: { scheduledAt: "asc" },
     });
     return res.json(liveClasses);
