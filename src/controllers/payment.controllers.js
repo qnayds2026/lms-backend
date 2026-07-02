@@ -6,6 +6,7 @@ const {
   createRazorpayOrder,
   updateRazorpayPayment,
 } = require("../services/payment.services");
+const crypto = require("crypto");
 
 const createManual = async (req, res) => {
   try {
@@ -100,10 +101,26 @@ const createOrder = async (req, res) => {
 
 const razorpayWebhook = async (req, res) => {
   try {
-    const event = req.body.event;
+    const signature = req.headers["x-razorpay-signature"];
+
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+      .update(req.body)
+      .digest("hex");
+
+    if (signature !== expectedSignature) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid webhook signature",
+      });
+    }
+
+    const payload = JSON.parse(req.body.toString());
+
+    const event = payload.event;
 
     if (event === "payment.captured") {
-      const paymentEntity = req.body.payload.payment.entity;
+      const paymentEntity = payload.payload.payment.entity;
 
       await updateRazorpayPayment(paymentEntity.order_id, paymentEntity.id);
     }
@@ -127,5 +144,5 @@ module.exports = {
   myPayments,
   allPayments,
   createOrder,
-  razorpayWebhook
+  razorpayWebhook,
 };

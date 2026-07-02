@@ -239,6 +239,10 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
     throw new Error("Payment not found");
   }
 
+  if (payment.status === "SUCCESS") {
+    return payment;
+  }
+  
   await prisma.payment.update({
     where: {
       id: payment.id,
