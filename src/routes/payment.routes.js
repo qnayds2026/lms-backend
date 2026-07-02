@@ -10,6 +10,18 @@ router.post(
   roleMiddleware("STUDENT"),
   paymentController.createManual,
 );
+router.get(
+  "/my-payments",
+  authMiddleware,
+  roleMiddleware("STUDENT"),
+  paymentController.myPayments,
+);
+router.get(
+  "/",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  paymentController.allPayments,
+);
 router.patch(
   "/:id/status",
   authMiddleware,

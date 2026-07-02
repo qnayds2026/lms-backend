@@ -1,6 +1,8 @@
 const {
   createManualPayment,
   updatePaymentStatus,
+  getMyPayments,
+  getAllPayments,
 } = require("../services/payment.services");
 
 const createManual = async (req, res) => {
@@ -42,7 +44,43 @@ const updateStatus = async (req, res) => {
   }
 };
 
+const myPayments = async (req, res) => {
+  try {
+    const payments = await getMyPayments(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      count: payments.length,
+      data: payments,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const allPayments = async (req, res) => {
+  try {
+    const payments = await getAllPayments();
+
+    res.status(200).json({
+      success: true,
+      count: payments.length,
+      data: payments,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createManual,
   updateStatus,
+  myPayments,
+  allPayments,
 };

@@ -132,7 +132,53 @@ const updatePaymentStatus = async (paymentId, status) => {
   return updatedPayment;
 };
 
+const getMyPayments = async (studentId) => {
+  return await prisma.payment.findMany({
+    where: {
+      studentId,
+    },
+    include: {
+      course: {
+        select: {
+          id: true,
+          title: true,
+          price: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
+
+const getAllPayments = async () => {
+  return await prisma.payment.findMany({
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      course: {
+        select: {
+          id: true,
+          title: true,
+          price: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
+
 module.exports = {
   createManualPayment,
   updatePaymentStatus,
+  getMyPayments,
+  getAllPayments,
 };
