@@ -172,6 +172,7 @@ model Payment {
   status        PaymentStatus @default(PENDING)
 
   transactionId String? @unique
+  razorpayOrderId String? @unique
 
   proofImage String?
 

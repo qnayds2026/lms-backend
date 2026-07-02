@@ -3,6 +3,8 @@ const {
   updatePaymentStatus,
   getMyPayments,
   getAllPayments,
+  createRazorpayOrder,
+  updateRazorpayPayment,
 } = require("../services/payment.services");
 
 const createManual = async (req, res) => {
@@ -78,9 +80,52 @@ const allPayments = async (req, res) => {
   }
 };
 
+const createOrder = async (req, res) => {
+  try {
+    const { courseId } = req.body;
+
+    const data = await createRazorpayOrder(req.user.id, courseId);
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const razorpayWebhook = async (req, res) => {
+  try {
+    const event = req.body.event;
+
+    if (event === "payment.captured") {
+      const paymentEntity = req.body.payload.payment.entity;
+
+      await updateRazorpayPayment(paymentEntity.order_id, paymentEntity.id);
+    }
+
+    return res.status(200).json({
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createManual,
   updateStatus,
   myPayments,
   allPayments,
+  createOrder,
+  razorpayWebhook
 };

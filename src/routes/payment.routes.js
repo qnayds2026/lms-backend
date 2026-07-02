@@ -28,5 +28,12 @@ router.patch(
   roleMiddleware("ADMIN"),
   paymentController.updateStatus,
 );
+router.post(
+  "/create-order",
+  authMiddleware,
+  roleMiddleware("STUDENT"),
+  paymentController.createOrder,
+);
+router.post("/webhook", paymentController.razorpayWebhook);
 
 module.exports = router;
