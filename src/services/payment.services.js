@@ -1,5 +1,6 @@
 const prisma = require("../lib/prisma");
 const razorpay = require("../config/razorpay");
+const { createNotification } = require("./notification.services");
 
 const createManualPayment = async (studentId, courseId, amount) => {
   // Check student
@@ -128,6 +129,18 @@ const updatePaymentStatus = async (paymentId, status) => {
         },
       });
     }
+    await createNotification(
+      payment.studentId,
+      "Payment Approved",
+      "Your payment has been approved and course access has been activated.",
+    );
+  }
+  if (status === "FAILED") {
+    await createNotification(
+      payment.studentId,
+      "Payment Failed",
+      "Your payment could not be processed. Please try again or contact support.",
+    );
   }
 
   return updatedPayment;
@@ -242,7 +255,7 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
   if (payment.status === "SUCCESS") {
     return payment;
   }
-  
+
   await prisma.payment.update({
     where: {
       id: payment.id,
@@ -278,6 +291,12 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
       },
     });
   }
+  await createNotification(
+    payment.studentId,
+    "Payment Approved",
+    "Your Razorpay payment was successful and your course access has been activated.",
+  );
+  return payment;
 };
 
 module.exports = {
