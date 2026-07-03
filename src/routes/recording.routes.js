@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { createRecording, getRecordingsByModule } = require("../controllers/recording.controller.js");
+const {
+  createRecording,
+  getRecordingsByModule,
+  publishRecording,
+  unpublishRecording,
+} = require("../controllers/recording.controller.js");
 const authMiddleware = require("../middleware/auth.middleware.js");
 const roleMiddleware = require("../middleware/role.middleware.js");
 
@@ -12,5 +17,19 @@ router.post(
 );
 
 router.get("/module/:moduleId", authMiddleware, getRecordingsByModule);
+
+router.patch(
+  "/:id/publish",
+  authMiddleware,
+  roleMiddleware(["INSTRUCTOR", "ADMIN"]),
+  publishRecording
+);
+
+router.patch(
+  "/:id/unpublish",
+  authMiddleware,
+  roleMiddleware(["INSTRUCTOR", "ADMIN"]),
+  unpublishRecording
+);
 
 module.exports = router;
