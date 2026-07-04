@@ -7,6 +7,7 @@ const authRoutes = require("./src/routes/auth.routes.js");
 const enrollmentRoutes = require("./src/routes/enrollment.routes.js");
 const paymentRoutes = require("./src/routes/payment.routes.js");
 const notificationRoutes = require("./src/routes/notification.routes.js");
+const dashboardRoutes = require("./src/routes/dashboard.routes.js");
 
 const courseRoutes = require("./src/routes/course.routes.js");
 const liveclassRoutes = require("./src/routes/liveclass.routes.js");
@@ -34,6 +35,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/liveclasses", liveclassRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/recordings", recordingRoutes);
 app.use("/api/modules", moduleRoutes);
