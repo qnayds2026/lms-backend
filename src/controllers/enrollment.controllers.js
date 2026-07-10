@@ -3,6 +3,7 @@ const {
   getMyCourses,
   updateEnrollmentStatus,
   getAllEnrollments,
+  getMyStudents,
 } = require("../services/enrollment.services");
 
 const create = async (req, res) => {
@@ -78,9 +79,27 @@ const getAll = async (req, res) => {
   }
 };
 
+const myStudents = async (req, res) => {
+  try {
+    const students = await getMyStudents(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      count: students.length,
+      data: students,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   create,
   myCourses,
   updateStatus,
   getAll,
+  myStudents,
 };

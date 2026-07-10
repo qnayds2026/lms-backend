@@ -1,39 +1,39 @@
 const router = require("express").Router();
-
-const enrollmentController = require("../controllers/enrollment.controllers");
+const paymentController = require("../controllers/payment.controllers");
 
 const authMiddleware = require("../middleware/auth.middleware");
 const roleMiddleware = require("../middleware/role.middleware");
 
 router.post(
-  "/",
+  "/manual",
   authMiddleware,
   roleMiddleware("STUDENT"),
-  enrollmentController.create,
+  paymentController.createManual,
 );
 router.get(
-  "/my-courses",
+  "/my-payments",
   authMiddleware,
   roleMiddleware("STUDENT"),
-  enrollmentController.myCourses,
-);
-router.get(
-  "/my-students",
-  authMiddleware,
-  roleMiddleware("INSTRUCTOR"),
-  enrollmentController.myStudents,
+  paymentController.myPayments,
 );
 router.get(
   "/",
   authMiddleware,
   roleMiddleware("ADMIN"),
-  enrollmentController.getAll,
+  paymentController.allPayments,
 );
 router.patch(
   "/:id/status",
   authMiddleware,
   roleMiddleware("ADMIN"),
-  enrollmentController.updateStatus,
+  paymentController.updateStatus,
 );
+router.post(
+  "/create-order",
+  authMiddleware,
+  roleMiddleware("STUDENT"),
+  paymentController.createOrder,
+);
+router.post("/webhook", paymentController.razorpayWebhook);
 
 module.exports = router;

@@ -139,9 +139,40 @@ const getAllEnrollments = async () => {
   });
 };
 
+const getMyStudents = async (instructorId) => {
+  const enrollments = await prisma.enrollment.findMany({
+    where: {
+      course: {
+        instructorId,
+      },
+    },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      course: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+    },
+    orderBy: {
+      enrolledAt: "desc",
+    },
+  });
+
+  return enrollments;
+};
+
 module.exports = {
   createEnrollment,
   getMyCourses,
   updateEnrollmentStatus,
-  getAllEnrollments
+  getAllEnrollments,
+  getMyStudents,
 };
