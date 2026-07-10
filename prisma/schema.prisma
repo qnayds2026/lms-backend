@@ -60,6 +60,7 @@ model User {
   liveClasses LiveClass[]
   enrollments Enrollment[]
   payments    Payment[]
+  notifications Notification[]
 }
 
 model Course {
@@ -187,4 +188,20 @@ model Payment {
 
   @@index([studentId])
   @@index([courseId])
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+
+  title String
+  message String
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

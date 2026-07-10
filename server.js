@@ -6,6 +6,8 @@ const morgan = require("morgan");
 const authRoutes = require("./src/routes/auth.routes.js");
 const enrollmentRoutes = require("./src/routes/enrollment.routes.js");
 const paymentRoutes = require("./src/routes/payment.routes.js");
+const notificationRoutes = require("./src/routes/notification.routes.js");
+const dashboardRoutes = require("./src/routes/dashboard.routes.js");
 
 const courseRoutes = require("./src/routes/course.routes.js");
 const liveclassRoutes = require("./src/routes/liveclass.routes.js");
@@ -17,10 +19,7 @@ const app = express();
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  "/api/payments/webhook",
-  express.raw({ type: "application/json" })
-);
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("combined"));
@@ -35,6 +34,8 @@ app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/liveclasses", liveclassRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/recordings", recordingRoutes);
 app.use("/api/modules", moduleRoutes);
