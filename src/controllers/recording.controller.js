@@ -119,12 +119,113 @@ async function getRecordingsByModule(req, res) {
       duration: r.duration,
       isPublished: r.isPublished,
       videoId: extractYoutubeId(r.videoUrl),
+      // Included so instructor-facing edit forms can prefill the original link.
+      // Students never hit this branch's data since isOwnerOrAdmin gates visibility upstream,
+      // but to be explicit we only attach it here, at the response-shaping step.
+      videoUrl: r.videoUrl,
     }));
 
     return res.json(safeRecordings);
   } catch (err) {
     console.error("Error fetching recordings:", err);
     return res.status(500).json({ error: "Failed to fetch recordings" });
+  }
+}
+
+// PATCH /api/recordings/:id  (Instructor who owns the course, or Admin)
+// Partial update: title, description, youtubeUrl, position can each be supplied independently.
+async function updateRecording(req, res) {
+  try {
+    const { id } = req.params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return res.status(400).json({ error: "id must be a valid number" });
+    }
+
+    const { title, description, youtubeUrl, position } = req.body;
+
+    const recording = await prisma.recording.findUnique({
+      where: { id: parsedId },
+      include: { module: { include: { course: true } } },
+    });
+
+    if (!recording) {
+      return res.status(404).json({ error: "Recording not found" });
+    }
+
+    if (recording.module.course.instructorId !== req.user.id && req.user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Not authorized to manage this recording" });
+    }
+
+    const data = {};
+
+    if (title !== undefined) {
+      if (!title.trim()) {
+        return res.status(400).json({ error: "title cannot be empty" });
+      }
+      data.title = title;
+    }
+
+    if (description !== undefined) {
+      data.description = description;
+    }
+
+    if (youtubeUrl !== undefined) {
+      const videoId = extractYoutubeId(youtubeUrl);
+      if (!videoId) {
+        return res.status(400).json({ error: "youtubeUrl is not a valid YouTube link" });
+      }
+      data.videoUrl = youtubeUrl.trim();
+    }
+
+    if (position !== undefined) {
+      const parsedPosition = parseInt(position);
+      if (isNaN(parsedPosition)) {
+        return res.status(400).json({ error: "position must be a valid number" });
+      }
+      data.position = parsedPosition;
+    }
+
+    const updated = await prisma.recording.update({
+      where: { id: parsedId },
+      data,
+    });
+
+    return res.json(updated);
+  } catch (err) {
+    console.error("Error updating recording:", err);
+    return res.status(500).json({ error: "Failed to update recording" });
+  }
+}
+
+// DELETE /api/recordings/:id  (Instructor who owns the course, or Admin)
+async function deleteRecording(req, res) {
+  try {
+    const { id } = req.params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return res.status(400).json({ error: "id must be a valid number" });
+    }
+
+    const recording = await prisma.recording.findUnique({
+      where: { id: parsedId },
+      include: { module: { include: { course: true } } },
+    });
+
+    if (!recording) {
+      return res.status(404).json({ error: "Recording not found" });
+    }
+
+    if (recording.module.course.instructorId !== req.user.id && req.user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Not authorized to manage this recording" });
+    }
+
+    await prisma.recording.delete({ where: { id: parsedId } });
+
+    return res.json({ success: true, id: parsedId });
+  } catch (err) {
+    console.error("Error deleting recording:", err);
+    return res.status(500).json({ error: "Failed to delete recording" });
   }
 }
 
@@ -196,4 +297,11 @@ async function unpublishRecording(req, res) {
   }
 }
 
-module.exports = { createRecording, getRecordingsByModule, publishRecording, unpublishRecording };
+module.exports = {
+  createRecording,
+  getRecordingsByModule,
+  updateRecording,
+  deleteRecording,
+  publishRecording,
+  unpublishRecording,
+};

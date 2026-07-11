@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   createRecording,
   getRecordingsByModule,
+  updateRecording,
+  deleteRecording,
   publishRecording,
   unpublishRecording,
 } = require("../controllers/recording.controller.js");
@@ -17,6 +19,20 @@ router.post(
 );
 
 router.get("/module/:moduleId", authMiddleware, getRecordingsByModule);
+
+router.patch(
+  "/:id",
+  authMiddleware,
+  roleMiddleware(["INSTRUCTOR", "ADMIN"]),
+  updateRecording
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  roleMiddleware(["INSTRUCTOR", "ADMIN"]),
+  deleteRecording
+);
 
 router.patch(
   "/:id/publish",
