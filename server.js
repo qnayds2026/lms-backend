@@ -15,6 +15,8 @@ const liveclassRoutes = require("./src/routes/liveclass.routes.js");
 const recordingRoutes = require("./src/routes/recording.routes.js");
 const moduleRoutes = require("./src/routes/module.routes.js");
 
+const adminRoutes = require("./src/routes/admin.routes.js");
+
 const app = express();
 
 // Middleware
@@ -39,6 +41,8 @@ app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/recordings", recordingRoutes);
 app.use("/api/modules", moduleRoutes);
+
+app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3000;
 
