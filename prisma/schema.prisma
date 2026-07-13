@@ -56,10 +56,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  courses     Course[]     @relation("InstructorCourses")
-  liveClasses LiveClass[]
-  enrollments Enrollment[]
-  payments    Payment[]
+  courses       Course[]       @relation("InstructorCourses")
+  liveClasses   LiveClass[]
+  enrollments   Enrollment[]
+  payments      Payment[]
   notifications Notification[]
 }
 
@@ -95,7 +95,7 @@ model CourseModule {
   updatedAt DateTime @updatedAt
 
   courseId Int
-  course   Course @relation(fields: [courseId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   recordings Recording[]
 
@@ -116,7 +116,7 @@ model Recording {
   updatedAt DateTime @updatedAt
 
   moduleId Int
-  module   CourseModule @relation(fields: [moduleId], references: [id])
+  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@index([moduleId])
 }
@@ -141,7 +141,7 @@ model LiveClass {
   courseId     Int
 
   instructor User   @relation(fields: [instructorId], references: [id])
-  course     Course @relation(fields: [courseId], references: [id])
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([instructorId])
   @@index([courseId])
@@ -154,7 +154,7 @@ model Enrollment {
   student   User @relation(fields: [studentId], references: [id])
 
   courseId Int
-  course   Course @relation(fields: [courseId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   status EnrollmentStatus @default(PENDING)
 
@@ -172,7 +172,7 @@ model Payment {
   paymentMethod PaymentMethod
   status        PaymentStatus @default(PENDING)
 
-  transactionId String? @unique
+  transactionId   String? @unique
   razorpayOrderId String? @unique
 
   proofImage String?
@@ -184,7 +184,7 @@ model Payment {
   student   User @relation(fields: [studentId], references: [id])
 
   courseId Int
-  course   Course @relation(fields: [courseId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@index([courseId])
@@ -193,7 +193,7 @@ model Payment {
 model Notification {
   id Int @id @default(autoincrement())
 
-  title String
+  title   String
   message String
 
   isRead Boolean @default(false)
@@ -201,7 +201,7 @@ model Notification {
   createdAt DateTime @default(now())
 
   userId Int
-  user User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
