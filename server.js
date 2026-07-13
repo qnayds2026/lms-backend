@@ -16,6 +16,7 @@ const recordingRoutes = require("./src/routes/recording.routes.js");
 const moduleRoutes = require("./src/routes/module.routes.js");
 
 const adminRoutes = require("./src/routes/admin.routes.js");
+const userRoutes = require("./src/routes/userRoutes.js");
 
 const app = express();
 
@@ -38,7 +39,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/liveclasses", liveclassRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-
+app.use("/api/users", userRoutes);
 app.use("/api/recordings", recordingRoutes);
 app.use("/api/modules", moduleRoutes);
 
