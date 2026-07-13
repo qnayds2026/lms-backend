@@ -1,4 +1,4 @@
-const prisma = require("../lib/prisma")
+const prisma = require("../lib/prisma");
 
 const getUsers = async (req, res) => {
   try {
@@ -63,12 +63,7 @@ const getUser = async (req, res) => {
 const updateUser = async (req, res) => {
   const userId = Number(req.params.id);
 
-  const {
-    name,
-    phone,
-    role,
-    isActive,
-  } = req.body;
+  const { name, phone, role, isActive } = req.body;
 
   try {
     const user = await prisma.user.update({
@@ -112,9 +107,44 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const toggleUserStatus = async (req, res) => {
+  const userId = Number(req.params.id);
+
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+
+      data: {
+        isActive: !existingUser.isActive,
+      },
+    });
+
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
 module.exports = {
   getUsers,
   getUser,
   updateUser,
   deleteUser,
+  toggleUserStatus,
 };
