@@ -201,17 +201,30 @@ const createRazorpayOrder = async (studentId, courseId) => {
     throw new Error("Course not found");
   }
 
-  // Prevent duplicate payments
+  // Remove abandoned Razorpay attempts
+  await prisma.payment.deleteMany({
+    where: {
+      studentId,
+      courseId,
+      paymentMethod: "RAZORPAY",
+      status: "PENDING",
+    },
+  });
+
+  // Check if course is already purchased
   const existingPayment = await prisma.payment.findFirst({
     where: {
       studentId,
       courseId,
       paymentMethod: "RAZORPAY",
-      status: {
-        in: ["PENDING", "SUCCESS"],
-      },
+      status: "SUCCESS",
     },
   });
+  console.log("existingPayment =", existingPayment);
+
+  if (existingPayment) {
+    throw new Error("Course already purchased");
+  }
 
   if (existingPayment) {
     throw new Error("Payment already exists for this course");
