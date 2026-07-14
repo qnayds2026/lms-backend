@@ -12,7 +12,9 @@ const createCourse = async (req, res) => {
   if (price !== undefined) {
     parsedPrice = Number(price);
     if (isNaN(parsedPrice) || parsedPrice < 0) {
-      return res.status(400).json({ message: "price must be a valid non-negative number" });
+      return res
+        .status(400)
+        .json({ message: "price must be a valid non-negative number" });
     }
   }
 
@@ -45,6 +47,47 @@ const getAllCourses = async (req, res) => {
   }
 };
 
+const getStudentCourses = async (req, res) => {
+  try {
+    const courses = await prisma.course.findMany({
+      where: {
+        isPublished: true,
+      },
+
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+
+        enrollments: {
+          where: {
+            studentId: req.user.id,
+          },
+
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+
+    const formattedCourses = courses.map((course) => ({
+      ...course,
+
+      enrollmentStatus: course.enrollments[0]?.status || null,
+    }));
+
+    res.json(formattedCourses);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
 // Get single course with modules
 const getCourse = async (req, res) => {
   const { id } = req.params;
@@ -57,7 +100,7 @@ const getCourse = async (req, res) => {
     const course = await prisma.course.findUnique({
       where: { id: parsedId },
       include: {
-       instructor: { select: { id: true, name: true } },
+        instructor: { select: { id: true, name: true } },
         modules: {
           orderBy: { position: "asc" },
           include: { recordings: { orderBy: { position: "asc" } } },
@@ -102,14 +145,18 @@ const updateCourse = async (req, res) => {
     if (price !== undefined) {
       const parsedPrice = Number(price);
       if (isNaN(parsedPrice) || parsedPrice < 0) {
-        return res.status(400).json({ message: "price must be a valid non-negative number" });
+        return res
+          .status(400)
+          .json({ message: "price must be a valid non-negative number" });
       }
       data.price = parsedPrice;
     }
     // Only admins can toggle publish status directly here
     if (isPublished !== undefined) {
       if (req.user.role !== "ADMIN") {
-        return res.status(403).json({ message: "Only admins can change publish status" });
+        return res
+          .status(403)
+          .json({ message: "Only admins can change publish status" });
       }
       data.isPublished = Boolean(isPublished);
     }
@@ -159,4 +206,12 @@ const myCourses = async (req, res) => {
   }
 };
 
-module.exports = { createCourse, getAllCourses, getCourse, updateCourse, deleteCourse, myCourses };
+module.exports = {
+  createCourse,
+  getAllCourses,
+  getCourse,
+  updateCourse,
+  deleteCourse,
+  myCourses,
+  getStudentCourses,
+};
