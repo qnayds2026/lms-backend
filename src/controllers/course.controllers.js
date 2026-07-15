@@ -124,7 +124,9 @@ const updateCourse = async (req, res) => {
   }
 };
 
-// Delete course
+// Delete course (and everything that references it, to avoid foreign key
+// constraint errors — recordings, modules, live classes, enrollments, then
+// the course itself, in that dependency order)
 const deleteCourse = async (req, res) => {
   const { id } = req.params;
   const parsedId = parseInt(id);
@@ -139,7 +141,24 @@ const deleteCourse = async (req, res) => {
       return res.status(403).json({ message: "Not your course" });
     }
 
+    const modules = await prisma.courseModule.findMany({
+      where: { courseId: parsedId },
+      select: { id: true },
+    });
+    const moduleIds = modules.map((m) => m.id);
+
+    if (moduleIds.length > 0) {
+      await prisma.recording.deleteMany({
+        where: { moduleId: { in: moduleIds } },
+      });
+    }
+
+    await prisma.courseModule.deleteMany({ where: { courseId: parsedId } });
+    await prisma.liveClass.deleteMany({ where: { courseId: parsedId } });
+    await prisma.enrollment.deleteMany({ where: { courseId: parsedId } });
+
     await prisma.course.delete({ where: { id: parsedId } });
+
     res.json({ message: "Course deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });

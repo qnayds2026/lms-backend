@@ -65,4 +65,63 @@ const getAllInstructors = async (req, res) => {
   }
 };
 
-module.exports = { getAllCoursesAdmin, getAllInstructors };
+// GET /api/admin/instructors/:id  (Admin only)
+// Full profile for one instructor, including their complete course list
+// with per-course price, publish status, and enrollment count.
+const getInstructorById = async (req, res) => {
+  const { id } = req.params;
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId)) {
+    return res.status(400).json({ message: "id must be a valid number" });
+  }
+
+  try {
+    const instructor = await prisma.user.findUnique({
+      where: { id: parsedId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+        role: true,
+        courses: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            title: true,
+            price: true,
+            isPublished: true,
+            createdAt: true,
+            _count: { select: { enrollments: true } },
+          },
+        },
+      },
+    });
+
+    if (!instructor || instructor.role !== "INSTRUCTOR") {
+      return res.status(404).json({ message: "Instructor not found" });
+    }
+
+    const totalStudents = instructor.courses.reduce(
+      (sum, c) => sum + c._count.enrollments,
+      0
+    );
+
+    res.json({
+      id: instructor.id,
+      name: instructor.name,
+      email: instructor.email,
+      phone: instructor.phone,
+      isActive: instructor.isActive,
+      joinedAt: instructor.createdAt,
+      totalStudents,
+      courses: instructor.courses,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { getAllCoursesAdmin, getAllInstructors, getInstructorById };
