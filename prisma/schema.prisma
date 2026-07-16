@@ -97,7 +97,8 @@ model CourseModule {
   courseId Int
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  recordings Recording[]
+  recordings  Recording[]
+  attachments ModuleAttachment[]
 
   @@index([courseId])
 }
@@ -204,4 +205,18 @@ model Notification {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model ModuleAttachment {
+  id       Int     @id @default(autoincrement())
+  title    String
+  fileUrl  String
+  fileType String?
+
+  createdAt DateTime @default(now())
+
+  moduleId Int
+  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@index([moduleId])
 }
