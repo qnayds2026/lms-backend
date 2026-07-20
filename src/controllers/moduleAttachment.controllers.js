@@ -6,6 +6,7 @@ const {
 
 const path = require("path");
 const uploadToCloudinary = require("../utils/uploadToCloudinary");
+const fs = require("fs");
 
 const create = async (req, res) => {
   try {
@@ -17,12 +18,16 @@ const create = async (req, res) => {
         message: "Please upload a file.",
       });
     }
-
     const result = await uploadToCloudinary(
-      req.file.buffer,
-      "lms/attachments",
-      "raw",
+      req.file.path,
+      req.file.originalname,
     );
+    // Delete temporary file after successful upload
+    // fs.unlink(req.file.path, (err) => {
+    //   if (err) {
+    //     console.error("Failed to remove temporary attachment:", err);
+    //   }
+    // });
 
     const fileType = path
       .extname(req.file.originalname)
@@ -49,7 +54,6 @@ const create = async (req, res) => {
     });
   }
 };
-
 const getByModule = async (req, res) => {
   try {
     const attachments = await getAttachmentsByModule(req.params.moduleId);

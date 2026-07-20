@@ -1,25 +1,16 @@
 const cloudinary = require("../config/cloudinary");
-const streamifier = require("streamifier");
 
-const uploadToCloudinary = (
-  buffer,
+const uploadToCloudinary = async (
+  filePath,
+  originalName,
   folder = "lms/attachments",
-  resourceType = "raw",
 ) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-      },
-      (error, result) => {
-        if (error) return reject(error);
-
-        resolve(result);
-      },
-    );
-
-    streamifier.createReadStream(buffer).pipe(stream);
+  return await cloudinary.uploader.upload(filePath, {
+    folder,
+    resource_type: "image",
+    format: "pdf",
+    use_filename: true,
+    unique_filename: false,
   });
 };
 

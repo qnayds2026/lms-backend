@@ -10,6 +10,7 @@ router.get("/module/:moduleId", auth, attachmentController.getByModule);
 
 router.post(
   "/",
+  auth,
   role("INSTRUCTOR", "ADMIN"),
   uploadAttachment.single("file"),
   attachmentController.create,
