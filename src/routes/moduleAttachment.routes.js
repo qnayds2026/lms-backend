@@ -2,6 +2,7 @@ const router = require("express").Router();
 
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
+const uploadAttachment = require("../middleware/uploadAttachment");
 
 const attachmentController = require("../controllers/moduleAttachment.controllers");
 
@@ -11,6 +12,7 @@ router.post(
   "/",
   auth,
   role("INSTRUCTOR", "ADMIN"),
+  uploadAttachment.single("file"),
   attachmentController.create,
 );
 

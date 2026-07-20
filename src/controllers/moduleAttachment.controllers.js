@@ -4,14 +4,40 @@ const {
   deleteAttachment,
 } = require("../services/moduleAttachment.service");
 
+const path = require("path");
+const uploadToCloudinary = require("../utils/uploadToCloudinary");
+const fs = require("fs");
+
 const create = async (req, res) => {
   try {
-    const { moduleId, title, fileUrl, fileType } = req.body;
+    const { moduleId, title } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Please upload a file.",
+      });
+    }
+    const result = await uploadToCloudinary(
+      req.file.path,
+      req.file.originalname,
+    );
+    // Delete temporary file after successful upload
+    // fs.unlink(req.file.path, (err) => {
+    //   if (err) {
+    //     console.error("Failed to remove temporary attachment:", err);
+    //   }
+    // });
+
+    const fileType = path
+      .extname(req.file.originalname)
+      .substring(1)
+      .toLowerCase();
 
     const attachment = await createAttachment(
       moduleId,
       title,
-      fileUrl,
+      result.secure_url,
       fileType,
     );
 
@@ -20,13 +46,14 @@ const create = async (req, res) => {
       data: attachment,
     });
   } catch (error) {
-    res.status(400).json({
+    console.error(error);
+
+    res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
-
 const getByModule = async (req, res) => {
   try {
     const attachments = await getAttachmentsByModule(req.params.moduleId);
