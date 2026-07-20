@@ -1,28 +1,34 @@
 const prisma = require("../lib/prisma.js");
-
-// Extracts the YouTube video ID from a full URL, embed URL, or short URL
-function extractYoutubeId(url) {
-  const match = url.match(/(?:embed\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return match ? match[1] : null;
-}
+const {
+  extractYoutubeId,
+  isValidVideoUrl,
+  getEmbedUrl,
+  getVideoProvider,
+} = require("../utils/video.helper");
 
 // POST /api/recordings  (instructor pastes a YouTube link for a module)
 async function createRecording(req, res) {
   try {
-    const { title, description, moduleId, position, youtubeUrl } = req.body;
+    const { title, description, moduleId, position, videoUrl } = req.body;
 
-    if (!title || !moduleId || !youtubeUrl) {
-      return res.status(400).json({ error: "title, moduleId, and youtubeUrl are required" });
+    if (!title || !moduleId || !videoUrl) {
+      return res.status(400).json({
+        error: "title, moduleId and videoUrl are required",
+      });
     }
 
     const parsedModuleId = parseInt(moduleId);
+
     if (isNaN(parsedModuleId)) {
-      return res.status(400).json({ error: "moduleId must be a valid number" });
+      return res.status(400).json({
+        error: "moduleId must be a valid number",
+      });
     }
 
-    const videoId = extractYoutubeId(youtubeUrl);
-    if (!videoId) {
-      return res.status(400).json({ error: "youtubeUrl is not a valid YouTube link" });
+    if (!isValidVideoUrl(videoUrl)) {
+      return res.status(400).json({
+        error: "Only YouTube or Google Drive links are allowed.",
+      });
     }
 
     const courseModule = await prisma.courseModule.findUnique({
@@ -31,18 +37,25 @@ async function createRecording(req, res) {
     });
 
     if (!courseModule) {
-      return res.status(404).json({ error: "Module not found" });
+      return res.status(404).json({
+        error: "Module not found",
+      });
     }
 
-    if (courseModule.course.instructorId !== req.user.id && req.user.role !== "ADMIN") {
-      return res.status(403).json({ error: "Not authorized to add recordings to this module" });
+    if (
+      courseModule.course.instructorId !== req.user.id &&
+      req.user.role !== "ADMIN"
+    ) {
+      return res.status(403).json({
+        error: "Not authorized to add recordings to this module",
+      });
     }
 
     const recording = await prisma.recording.create({
       data: {
         title,
         description,
-        videoUrl: youtubeUrl.trim(),
+        videoUrl: videoUrl.trim(),
         position: position ? parseInt(position) : 0,
         moduleId: parsedModuleId,
         isPublished: false,
@@ -51,11 +64,12 @@ async function createRecording(req, res) {
 
     return res.status(201).json(recording);
   } catch (err) {
-    console.error("Error creating recording:", err);
-    return res.status(500).json({ error: "Failed to save recording" });
+    console.error(err);
+    return res.status(500).json({
+      error: "Failed to save recording",
+    });
   }
 }
-
 // GET /api/recordings/module/:moduleId
 // Enrollment-gated: only ACTIVE-enrolled students, or the owning instructor/admin, can view
 async function getRecordingsByModule(req, res) {
@@ -76,7 +90,8 @@ async function getRecordingsByModule(req, res) {
     }
 
     const isOwnerOrAdmin =
-      req.user.role === "ADMIN" || courseModule.course.instructorId === req.user.id;
+      req.user.role === "ADMIN" ||
+      courseModule.course.instructorId === req.user.id;
 
     if (!isOwnerOrAdmin) {
       const enrollment = await prisma.enrollment.findUnique({
@@ -118,10 +133,13 @@ async function getRecordingsByModule(req, res) {
       description: r.description,
       duration: r.duration,
       isPublished: r.isPublished,
+
+      provider: getVideoProvider(r.videoUrl),
+
       videoId: extractYoutubeId(r.videoUrl),
-      // Included so instructor-facing edit forms can prefill the original link.
-      // Students never hit this branch's data since isOwnerOrAdmin gates visibility upstream,
-      // but to be explicit we only attach it here, at the response-shaping step.
+
+      embedUrl: getEmbedUrl(r.videoUrl),
+
       videoUrl: r.videoUrl,
     }));
 
@@ -142,7 +160,7 @@ async function updateRecording(req, res) {
       return res.status(400).json({ error: "id must be a valid number" });
     }
 
-    const { title, description, youtubeUrl, position } = req.body;
+    const { title, description, videoUrl, position } = req.body;
 
     const recording = await prisma.recording.findUnique({
       where: { id: parsedId },
@@ -153,8 +171,13 @@ async function updateRecording(req, res) {
       return res.status(404).json({ error: "Recording not found" });
     }
 
-    if (recording.module.course.instructorId !== req.user.id && req.user.role !== "ADMIN") {
-      return res.status(403).json({ error: "Not authorized to manage this recording" });
+    if (
+      recording.module.course.instructorId !== req.user.id &&
+      req.user.role !== "ADMIN"
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to manage this recording" });
     }
 
     const data = {};
@@ -170,18 +193,22 @@ async function updateRecording(req, res) {
       data.description = description;
     }
 
-    if (youtubeUrl !== undefined) {
-      const videoId = extractYoutubeId(youtubeUrl);
-      if (!videoId) {
-        return res.status(400).json({ error: "youtubeUrl is not a valid YouTube link" });
+    if (videoUrl !== undefined) {
+      if (!isValidVideoUrl(videoUrl)) {
+        return res.status(400).json({
+          error: "Only YouTube or Google Drive links are allowed.",
+        });
       }
-      data.videoUrl = youtubeUrl.trim();
+
+      data.videoUrl = videoUrl.trim();
     }
 
     if (position !== undefined) {
       const parsedPosition = parseInt(position);
       if (isNaN(parsedPosition)) {
-        return res.status(400).json({ error: "position must be a valid number" });
+        return res
+          .status(400)
+          .json({ error: "position must be a valid number" });
       }
       data.position = parsedPosition;
     }
@@ -216,8 +243,13 @@ async function deleteRecording(req, res) {
       return res.status(404).json({ error: "Recording not found" });
     }
 
-    if (recording.module.course.instructorId !== req.user.id && req.user.role !== "ADMIN") {
-      return res.status(403).json({ error: "Not authorized to manage this recording" });
+    if (
+      recording.module.course.instructorId !== req.user.id &&
+      req.user.role !== "ADMIN"
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to manage this recording" });
     }
 
     await prisma.recording.delete({ where: { id: parsedId } });
@@ -247,8 +279,13 @@ async function publishRecording(req, res) {
       return res.status(404).json({ error: "Recording not found" });
     }
 
-    if (recording.module.course.instructorId !== req.user.id && req.user.role !== "ADMIN") {
-      return res.status(403).json({ error: "Not authorized to manage this recording" });
+    if (
+      recording.module.course.instructorId !== req.user.id &&
+      req.user.role !== "ADMIN"
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to manage this recording" });
     }
 
     const updated = await prisma.recording.update({
@@ -281,8 +318,13 @@ async function unpublishRecording(req, res) {
       return res.status(404).json({ error: "Recording not found" });
     }
 
-    if (recording.module.course.instructorId !== req.user.id && req.user.role !== "ADMIN") {
-      return res.status(403).json({ error: "Not authorized to manage this recording" });
+    if (
+      recording.module.course.instructorId !== req.user.id &&
+      req.user.role !== "ADMIN"
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to manage this recording" });
     }
 
     const updated = await prisma.recording.update({
