@@ -44,7 +44,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/recordings", recordingRoutes);
 app.use("/api/modules", moduleRoutes);
 app.use("/api/module-attachments", moduleAttachmentRoutes);
-
 app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3000;

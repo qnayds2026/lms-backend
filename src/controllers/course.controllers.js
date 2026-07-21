@@ -1,39 +1,74 @@
 const prisma = require("../lib/prisma");
 
-// Create course (Instructor only)
+// Create course
 const createCourse = async (req, res) => {
-  const { title, description, thumbnail, price } = req.body;
+  const { title, description, thumbnail, price, instructorId } = req.body;
 
   if (!title || !title.trim()) {
-    return res.status(400).json({ message: "title is required" });
+    return res.status(400).json({ message: "Title is required" });
   }
 
   let parsedPrice = 0;
   if (price !== undefined) {
     parsedPrice = Number(price);
     if (isNaN(parsedPrice) || parsedPrice < 0) {
-      return res
-        .status(400)
-        .json({ message: "price must be a valid non-negative number" });
+      return res.status(400).json({
+        message: "Price must be a valid non-negative number",
+      });
     }
   }
 
   try {
+    let assignedInstructorId = req.user.id;
+
+    // If admin, allow assigning to another instructor
+    if (req.user.role === "ADMIN") {
+      if (!instructorId) {
+        return res.status(400).json({
+          message: "Please select an instructor.",
+        });
+      }
+
+      const instructor = await prisma.user.findUnique({
+        where: {
+          id: Number(instructorId),
+        },
+      });
+
+      if (!instructor || instructor.role !== "INSTRUCTOR") {
+        return res.status(400).json({
+          message: "Invalid instructor selected.",
+        });
+      }
+
+      assignedInstructorId = instructor.id;
+    }
+
     const course = await prisma.course.create({
       data: {
         title: title.trim(),
         description,
         thumbnail,
         price: parsedPrice,
-        instructorId: req.user.id,
+        instructorId: assignedInstructorId,
+      },
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
+
     res.status(201).json(course);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };
-
 // Get all published courses
 const getAllCourses = async (req, res) => {
   try {
