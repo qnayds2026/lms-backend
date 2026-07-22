@@ -1,6 +1,6 @@
 const prisma = require("../lib/prisma.js");
 const { createZoomMeeting } = require("../lib/zoom.js");
-const { createGoogleMeetEvent } = require("../lib/googleMeet.js");
+const { createGoogleMeetEvent } = require("../lib/googlemeet.js");
 
 // POST /api/liveclasses
 async function createLiveClass(req, res) {
