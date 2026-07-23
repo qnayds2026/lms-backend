@@ -3,8 +3,8 @@ const transporter = require("../config/mail");
 const sendActivationEmail = async ({ name, email, token }) => {
   const activationLink = `${process.env.FRONTEND_URL}/activate-account?token=${token}`;
 
-  await transporter.sendMail({
-    from: `"QNAYDS Academy" <${process.env.SMTP_EMAIL}>`,
+  const info = await transporter.sendMail({
+    from: `"QNAYDS Academy" <${process.env.SMTP_FROM}>`,
     to: email,
     subject: "Activate your QNAYDS LMS Account",
     html: `
@@ -45,6 +45,10 @@ const sendActivationEmail = async ({ name, email, token }) => {
       </div>
     `,
   });
+
+  console.log("Activation email sent:", info.messageId);
+
+  return info;
 };
 
 module.exports = {
