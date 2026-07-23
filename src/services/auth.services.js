@@ -62,6 +62,12 @@ const loginUser = async (userData) => {
     throw new Error("Invalid email or password");
   }
 
+  if (!user.isActive) {
+  throw new Error(
+    "Your account has not been activated yet. Please check your email to activate your account."
+  );
+}
+
   const token = generateToken({
     id: user.id,
     role: user.role,
@@ -101,8 +107,63 @@ const getCurrentUserService = async (userId) => {
   return user;
 };
 
+const activateAccount = async (token, password) => {
+  if (!token || !password) {
+    throw new Error("Token and password are required.");
+  }
+
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters.");
+  }
+
+ const user = await prisma.user.findFirst({
+  where: {
+    activationToken: token,
+  },
+  select: {
+    id: true,
+    isActive: true,
+    activationExpires: true,
+  },
+});
+
+if (!user) {
+  throw new Error("Invalid activation link.");
+}
+
+if (user.isActive) {
+  throw new Error("Account is already activated.");
+}
+
+if (
+  !user.activationExpires ||
+  user.activationExpires < new Date()
+) {
+  throw new Error("Activation link has expired.");
+}
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      password: hashedPassword,
+      isActive: true,
+      activationToken: null,
+      activationExpires: null,
+    },
+  });
+
+  return {
+    message: "Account activated successfully.",
+  };
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUserService,
+  activateAccount,
 };
