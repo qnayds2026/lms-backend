@@ -261,8 +261,10 @@ const createRazorpayOrder = async (studentId, courseId) => {
   const order = await razorpay.orders.create({
     amount: Math.round(Number(course.price) * 100),
     currency: "INR",
-    receipt: `course_${courseId}_student_${studentId}`,
+    receipt: `order_${Date.now()}`,
   });
+  console.log("Payment service loaded");
+  console.log(order);
 
   // Create payment record
   await prisma.payment.create({
@@ -359,11 +361,15 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
     student.activationExpires &&
     student.activationExpires > new Date()
   ) {
-    await sendActivationEmail({
-      name: student.name,
-      email: student.email,
-      token: student.activationToken,
-    });
+    try {
+      await sendActivationEmail({
+        name: student.name,
+        email: student.email,
+        token: student.activationToken,
+      });
+    } catch (err) {
+      console.error("Activation email failed:", err.message);
+    }
   }
 
   return payment;

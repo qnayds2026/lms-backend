@@ -35,5 +35,6 @@ router.post(
   paymentController.createOrder,
 );
 router.post("/webhook", paymentController.razorpayWebhook);
+router.post("/verify", paymentController.verifyPayment);
 
 module.exports = router;
