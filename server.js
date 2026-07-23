@@ -19,6 +19,8 @@ const moduleAttachmentRoutes = require("./src/routes/moduleAttachment.routes.js"
 const adminRoutes = require("./src/routes/admin.routes.js");
 const userRoutes = require("./src/routes/userRoutes.js");
 
+const landingRoutes = require("./src/routes/landing.routes.js");
+
 const app = express();
 
 // Middleware
@@ -44,6 +46,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/recordings", recordingRoutes);
 app.use("/api/modules", moduleRoutes);
 app.use("/api/module-attachments", moduleAttachmentRoutes);
+app.use("/api/landing", landingRoutes);
 app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3000;

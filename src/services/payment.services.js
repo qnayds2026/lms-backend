@@ -1,6 +1,7 @@
 const prisma = require("../lib/prisma");
 const razorpay = require("../config/razorpay");
 const { createNotification } = require("./notification.services");
+const { sendActivationEmail } = require("./email.services");
 
 const createManualPayment = async (studentId, courseId, amount) => {
   // Check student
@@ -129,12 +130,44 @@ const updatePaymentStatus = async (paymentId, status) => {
         },
       });
     }
+
     await createNotification(
       payment.studentId,
       "Payment Approved",
       "Your payment has been approved and course access has been activated.",
     );
+
+    // Check if this is a landing-page created account
+    const student = await prisma.user.findUnique({
+      where: {
+        id: payment.studentId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActive: true,
+        activationToken: true,
+        activationExpires: true,
+      },
+    });
+
+    // Send activation email only if account is inactive
+    if (
+      student &&
+      !student.isActive &&
+      student.activationToken &&
+      student.activationExpires &&
+      student.activationExpires > new Date()
+    ) {
+      await sendActivationEmail({
+        name: student.name,
+        email: student.email,
+        token: student.activationToken,
+      });
+    }
   }
+
   if (status === "FAILED") {
     await createNotification(
       payment.studentId,
@@ -220,18 +253,13 @@ const createRazorpayOrder = async (studentId, courseId) => {
       status: "SUCCESS",
     },
   });
-  console.log("existingPayment =", existingPayment);
 
   if (existingPayment) {
     throw new Error("Course already purchased");
   }
 
-  if (existingPayment) {
-    throw new Error("Payment already exists for this course");
-  }
-
   const order = await razorpay.orders.create({
-    amount: Number(course.price) * 100,
+    amount: Math.round(Number(course.price) * 100),
     currency: "INR",
     receipt: `course_${courseId}_student_${studentId}`,
   });
@@ -253,7 +281,6 @@ const createRazorpayOrder = async (studentId, courseId) => {
     course,
   };
 };
-
 const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
   const payment = await prisma.payment.findFirst({
     where: {
@@ -304,11 +331,41 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
       },
     });
   }
+
   await createNotification(
     payment.studentId,
     "Payment Approved",
     "Your Razorpay payment was successful and your course access has been activated.",
   );
+
+  // Send activation email for landing-page users
+  const student = await prisma.user.findUnique({
+    where: {
+      id: payment.studentId,
+    },
+    select: {
+      name: true,
+      email: true,
+      isActive: true,
+      activationToken: true,
+      activationExpires: true,
+    },
+  });
+
+  if (
+    student &&
+    !student.isActive &&
+    student.activationToken &&
+    student.activationExpires &&
+    student.activationExpires > new Date()
+  ) {
+    await sendActivationEmail({
+      name: student.name,
+      email: student.email,
+      token: student.activationToken,
+    });
+  }
+
   return payment;
 };
 
