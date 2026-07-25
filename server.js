@@ -56,9 +56,13 @@ app.use(
 );
 
 app.get("/", (req, res) => {
-  res.send("Hello, World!");
-});
+  console.log("GET / reached");
 
+  res.status(200).json({
+    success: true,
+    message: "Backend is working",
+  });
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/payments", paymentRoutes);
@@ -75,6 +79,14 @@ app.use("/api/landing", landingRoutes);
 app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3000;
+
+app.use((err, req, res, next) => {
+  console.error("Unhandled Error:", err);
+
+  res.status(500).json({
+    message: err.message,
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
