@@ -30,7 +30,25 @@ app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("combined"));
-app.use(cors());
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://lms.qnayds.in",
+  "https://qnayds.in",
+  "https://www.qnayds.in",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  }),
+);
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
