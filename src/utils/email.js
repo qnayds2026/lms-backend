@@ -1,18 +1,18 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: process.env.SMTP_PORT === "465",
+  host: process.env.GMAIL_SMTP_HOST,
+  port: Number(process.env.GMAIL_SMTP_PORT),
+  secure: process.env.GMAIL_SMTP_PORT === "465",
   auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD,
+    user: process.env.GMAIL_SMTP_USER,
+    pass: process.env.GMAIL_SMTP_PASS,
   },
 });
 
 const sendResetPasswordEmail = async (to, resetUrl) => {
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_EMAIL,
+    from: process.env.GMAIL_SMTP_USER,
     to,
     subject: "Reset your Qnayds password",
     html: `
