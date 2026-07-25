@@ -18,6 +18,7 @@ const moduleAttachmentRoutes = require("./src/routes/moduleAttachment.routes.js"
 
 const adminRoutes = require("./src/routes/admin.routes.js");
 const userRoutes = require("./src/routes/userRoutes.js");
+const googleAuthRoutes = require("./src/routes/googleAuth.routes.js");
 
 const landingRoutes = require("./src/routes/landing.routes.js");
 
@@ -40,6 +41,7 @@ app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/liveclasses", liveclassRoutes);
+app.use("/api/auth/google", googleAuthRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/users", userRoutes);

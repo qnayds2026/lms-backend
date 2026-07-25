@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const prisma = require("../lib/prisma.js");
 const { generateToken } = require("../utils/jwt.js");
+const { sendResetPasswordEmail } = require("../utils/email.js");
 
 const registerUser = async (userData) => {
   const { name, email, phone, password, role } = userData;
@@ -63,10 +65,10 @@ const loginUser = async (userData) => {
   }
 
   if (!user.isActive) {
-  throw new Error(
-    "Your account has not been activated yet. Please check your email to activate your account."
-  );
-}
+    throw new Error(
+      "Your account has not been activated yet. Please check your email to activate your account."
+    );
+  }
 
   const token = generateToken({
     id: user.id,
@@ -116,31 +118,31 @@ const activateAccount = async (token, password) => {
     throw new Error("Password must be at least 8 characters.");
   }
 
- const user = await prisma.user.findFirst({
-  where: {
-    activationToken: token,
-  },
-  select: {
-    id: true,
-    isActive: true,
-    activationExpires: true,
-  },
-});
+  const user = await prisma.user.findFirst({
+    where: {
+      activationToken: token,
+    },
+    select: {
+      id: true,
+      isActive: true,
+      activationExpires: true,
+    },
+  });
 
-if (!user) {
-  throw new Error("Invalid activation link.");
-}
+  if (!user) {
+    throw new Error("Invalid activation link.");
+  }
 
-if (user.isActive) {
-  throw new Error("Account is already activated.");
-}
+  if (user.isActive) {
+    throw new Error("Account is already activated.");
+  }
 
-if (
-  !user.activationExpires ||
-  user.activationExpires < new Date()
-) {
-  throw new Error("Activation link has expired.");
-}
+  if (
+    !user.activationExpires ||
+    user.activationExpires < new Date()
+  ) {
+    throw new Error("Activation link has expired.");
+  }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -161,9 +163,68 @@ if (
   };
 };
 
+const forgotPasswordService = async (email) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  // Don't reveal whether the email exists — always resolve the same way
+  if (!user) {
+    return;
+  }
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetToken: hashedToken,
+      resetTokenExpiry: expiry,
+    },
+  });
+
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${rawToken}`;
+
+  await sendResetPasswordEmail(user.email, resetUrl);
+};
+
+const resetPasswordService = async (rawToken, newPassword) => {
+  const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+  const user = await prisma.user.findFirst({
+    where: {
+      resetToken: hashedToken,
+      resetTokenExpiry: {
+        gt: new Date(),
+      },
+    },
+  });
+
+  if (!user) {
+    throw new Error("Invalid or expired reset token");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpiry: null,
+    },
+  });
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUserService,
   activateAccount,
+  forgotPasswordService,
+  resetPasswordService,
 };

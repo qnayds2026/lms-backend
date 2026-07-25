@@ -7,54 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  INSTRUCTOR
-  STUDENT
-}
-
-enum LiveClassStatus {
-  SCHEDULED
-  LIVE
-  ENDED
-}
-
-enum EnrollmentStatus {
-  PENDING
-  ACTIVE
-  EXPIRED
-  CANCELLED
-}
-
-enum MeetingPlatform {
-  ZOOM
-  GOOGLE_MEET
-  MANUAL
-}
-
-enum PaymentMethod {
-  MANUAL
-  RAZORPAY
-}
-
-enum PaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
-}
-
 model User {
-  id Int @id @default(autoincrement())
-
-  name     String
-  email    String   @unique
-  phone    String?
+  id     Int    @id @default(autoincrement())
+  name   String
+  email  String @unique
+  phone  String?
   password String
   role     UserRole @default(STUDENT)
-  isActive Boolean @default(true)
+  isActive Boolean  @default(false)
 
   activationToken   String?
   activationExpires DateTime?
+
+  resetToken       String?
+  resetTokenExpiry DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -222,4 +188,40 @@ model ModuleAttachment {
   module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@index([moduleId])
+}
+
+enum UserRole {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+enum LiveClassStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum MeetingPlatform {
+  ZOOM
+  GOOGLE_MEET
+  MANUAL
+}
+
+enum PaymentMethod {
+  MANUAL
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
