@@ -24,7 +24,6 @@ const landingRoutes = require("./src/routes/landing.routes.js");
 
 const app = express();
 
-
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
@@ -37,6 +36,7 @@ const allowedOrigins = [
   "https://lms.qnayds.in",
   "https://qnayds.in",
   "https://www.qnayds.in",
+  "https://jeh.qnayds.in",
 ];
 
 app.use(
