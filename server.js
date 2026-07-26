@@ -1,8 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-// const helmet = require("helmet");
-// const morgan = require("morgan");
+const helmet = require("helmet");
+const morgan = require("morgan");
 const authRoutes = require("./src/routes/auth.routes.js");
 const enrollmentRoutes = require("./src/routes/enrollment.routes.js");
 const paymentRoutes = require("./src/routes/payment.routes.js");
@@ -24,17 +24,13 @@ const landingRoutes = require("./src/routes/landing.routes.js");
 
 const app = express();
 
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
-// app.use(helmet());
-// app.use(morgan("combined"));
+app.use(helmet());
+app.use(morgan("combined"));
 
 const allowedOrigins = [
   "http://localhost:5173",
