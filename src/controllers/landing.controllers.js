@@ -53,9 +53,7 @@ const createLandingOrder = async (req, res) => {
           },
           data: {
             activationToken: crypto.randomBytes(32).toString("hex"),
-            activationExpires: new Date(
-              Date.now() + 24 * 60 * 60 * 1000
-            ),
+            activationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
           },
         });
       }
@@ -73,18 +71,29 @@ const createLandingOrder = async (req, res) => {
           role: "STUDENT",
           isActive: false,
           activationToken: crypto.randomBytes(32).toString("hex"),
-          activationExpires: new Date(
-            Date.now() + 24 * 60 * 60 * 1000
-          ),
+          activationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         },
       });
     }
 
+    // Check if student already has access to this course
+    const existingEnrollment = await prisma.enrollment.findFirst({
+      where: {
+        studentId: student.id,
+        courseId: Number(courseId),
+        status: "ACTIVE",
+      },
+    });
+
+    if (existingEnrollment) {
+      return res.status(400).json({
+        success: false,
+        message: "You already own this course.",
+      });
+    }
+
     // Reuse existing payment service
-    const paymentData = await createRazorpayOrder(
-      student.id,
-      Number(courseId)
-    );
+    const paymentData = await createRazorpayOrder(student.id, Number(courseId));
 
     return res.status(200).json({
       success: true,
