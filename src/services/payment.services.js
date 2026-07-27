@@ -244,17 +244,25 @@ const createRazorpayOrder = async (studentId, courseId) => {
     },
   });
 
-  // Check if course is already purchased
-  const existingPayment = await prisma.payment.findFirst({
+  // Remove pending enrollment from abandoned attempts
+  await prisma.enrollment.deleteMany({
     where: {
       studentId,
       courseId,
-      paymentMethod: "RAZORPAY",
-      status: "SUCCESS",
+      status: "PENDING",
     },
   });
 
-  if (existingPayment) {
+  // Check if course is already purchased
+  const existingEnrollment = await prisma.enrollment.findFirst({
+    where: {
+      studentId,
+      courseId,
+      status: "ACTIVE",
+    },
+  });
+
+  if (existingEnrollment) {
     throw new Error("Course already purchased");
   }
 
@@ -278,11 +286,21 @@ const createRazorpayOrder = async (studentId, courseId) => {
     },
   });
 
+  // Create pending enrollment
+  await prisma.enrollment.create({
+    data: {
+      studentId,
+      courseId,
+      status: "PENDING",
+    },
+  });
+
   return {
     order,
     course,
   };
 };
+
 const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
   const payment = await prisma.payment.findFirst({
     where: {
@@ -298,7 +316,7 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
     return payment;
   }
 
-  await prisma.payment.update({
+  const updatedPayment = await prisma.payment.update({
     where: {
       id: payment.id,
     },
@@ -372,7 +390,7 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
     }
   }
 
-  return payment;
+  return updatedPayment;
 };
 
 module.exports = {
