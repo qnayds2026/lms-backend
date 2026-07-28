@@ -224,17 +224,20 @@ const getAllPayments = async () => {
 };
 
 const createRazorpayOrder = async (studentId, courseId) => {
+  console.time("Course");
   const course = await prisma.course.findUnique({
     where: {
       id: courseId,
     },
   });
+  console.timeEnd("Course");
 
   if (!course) {
     throw new Error("Course not found");
   }
 
   // Remove abandoned Razorpay attempts
+  console.time("Delete Pending");
   await prisma.payment.deleteMany({
     where: {
       studentId,
@@ -245,6 +248,7 @@ const createRazorpayOrder = async (studentId, courseId) => {
   });
 
   // Remove pending enrollment from abandoned attempts
+
   await prisma.enrollment.deleteMany({
     where: {
       studentId,
@@ -252,8 +256,10 @@ const createRazorpayOrder = async (studentId, courseId) => {
       status: "PENDING",
     },
   });
+    console.timeEnd("Delete Pending");
 
   // Check if course is already purchased
+  console.time("Enrollment Check");
   const existingEnrollment = await prisma.enrollment.findFirst({
     where: {
       studentId,
@@ -261,11 +267,13 @@ const createRazorpayOrder = async (studentId, courseId) => {
       status: "ACTIVE",
     },
   });
+  console.timeEnd("Enrollment Check");
 
   if (existingEnrollment) {
     throw new Error("Course already purchased");
   }
 
+  console.time("Razorpay");
   const order = await razorpay.orders.create({
     amount: Math.round(Number(course.price) * 100),
     currency: "INR",
@@ -273,8 +281,10 @@ const createRazorpayOrder = async (studentId, courseId) => {
   });
   console.log("Payment service loaded");
   console.log(order);
+  console.timeEnd("Razorpay");
 
   // Create payment record
+  console.time("Create Records");
   await prisma.payment.create({
     data: {
       amount: course.price,
@@ -294,6 +304,7 @@ const createRazorpayOrder = async (studentId, courseId) => {
       status: "PENDING",
     },
   });
+  console.timeEnd("Create Records");
 
   return {
     order,
@@ -379,15 +390,13 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
     student.activationExpires &&
     student.activationExpires > new Date()
   ) {
-    try {
-      await sendActivationEmail({
-        name: student.name,
-        email: student.email,
-        token: student.activationToken,
-      });
-    } catch (err) {
-      console.error("Activation email failed:", err.message);
-    }
+  sendActivationEmail({
+  name: student.name,
+  email: student.email,
+  token: student.activationToken,
+}).catch((err) => {
+   console.error("Activation email failed:", err);
+});
   }
 
   return updatedPayment;
