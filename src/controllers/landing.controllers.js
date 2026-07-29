@@ -2,6 +2,7 @@ const prisma = require("../lib/prisma");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { createRazorpayOrder } = require("../services/payment.services");
+const { sendActivationEmail } = require("../services/email.services");
 
 const createLandingOrder = async (req, res) => {
   try {
@@ -119,6 +120,79 @@ const createLandingOrder = async (req, res) => {
   }
 };
 
+
+const resendActivationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: "Account is already activated",
+      });
+    }
+
+    let token = user.activationToken;
+
+    if (
+      !token ||
+      !user.activationExpires ||
+      user.activationExpires < new Date()
+    ) {
+      token = crypto.randomBytes(32).toString("hex");
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          activationToken: token,
+          activationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
+      });
+    }
+
+    await sendActivationEmail({
+      name: user.name,
+      email: user.email,
+      token,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Activation email sent successfully.",
+    });
+  } catch (error) {
+    console.error("Resend Activation Error:", error);
+
+   console.error("Resend Activation Error:", error);
+console.error("Message:", error.message);
+console.error("Stack:", error.stack);
+
+return res.status(500).json({
+  success: false,
+  message: error.message,
+});
+  }
+};
+
 module.exports = {
   createLandingOrder,
+  resendActivationEmail,
 };
