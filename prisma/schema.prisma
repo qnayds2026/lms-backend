@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
 model User {
   id     Int    @id @default(autoincrement())
   name   String
@@ -15,6 +20,12 @@ model User {
   password String
   role     UserRole @default(STUDENT)
   isActive Boolean  @default(false)
+
+
+  provider AuthProvider @default(LOCAL)
+
+  googleId String? @unique
+  avatar   String?
 
   activationToken   String?
   activationExpires DateTime?

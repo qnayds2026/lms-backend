@@ -5,6 +5,7 @@ const {
   activateAccount,
   forgotPasswordService,
   resetPasswordService,
+  googleLoginService,
 } = require("../services/auth.services.js");
 
 const register = async (req, res) => {
@@ -91,7 +92,8 @@ const forgotPassword = async (req, res) => {
     // Always return success, even if the email doesn't exist
     res.status(200).json({
       success: true,
-      message: "If an account with that email exists, a reset link has been sent.",
+      message:
+        "If an account with that email exists, a reset link has been sent.",
     });
   } catch (error) {
     res.status(500).json({
@@ -127,6 +129,29 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const googleLogin = async (req, res, next) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Google ID token is required",
+      });
+    }
+
+    const data = await googleLoginService(idToken);
+
+    return res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -134,4 +159,5 @@ module.exports = {
   activateAccountController,
   forgotPassword,
   resetPassword,
+  googleLogin,
 };
