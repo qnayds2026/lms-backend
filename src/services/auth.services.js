@@ -3,6 +3,9 @@ const crypto = require("crypto");
 const prisma = require("../lib/prisma.js");
 const { generateToken } = require("../utils/jwt.js");
 const { sendResetPasswordEmail } = require("../utils/email.js");
+const { OAuth2Client } = require("google-auth-library");
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const registerUser = async (userData) => {
   const { name, email, phone, password, role } = userData;
@@ -66,7 +69,7 @@ const loginUser = async (userData) => {
 
   if (!user.isActive) {
     throw new Error(
-      "Your account has not been activated yet. Please check your email to activate your account."
+      "Your account has not been activated yet. Please check your email to activate your account.",
     );
   }
 
@@ -137,10 +140,7 @@ const activateAccount = async (token, password) => {
     throw new Error("Account is already activated.");
   }
 
-  if (
-    !user.activationExpires ||
-    user.activationExpires < new Date()
-  ) {
+  if (!user.activationExpires || user.activationExpires < new Date()) {
     throw new Error("Activation link has expired.");
   }
 
@@ -176,7 +176,10 @@ const forgotPasswordService = async (email) => {
   }
 
   const rawToken = crypto.randomBytes(32).toString("hex");
-  const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
   const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
   await prisma.user.update({
@@ -193,7 +196,10 @@ const forgotPasswordService = async (email) => {
 };
 
 const resetPasswordService = async (rawToken, newPassword) => {
-  const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
 
   const user = await prisma.user.findFirst({
     where: {
@@ -220,6 +226,81 @@ const resetPasswordService = async (rawToken, newPassword) => {
   });
 };
 
+const googleLoginService = async (idToken) => {
+  // Verify Google token
+  const ticket = await googleClient.verifyIdToken({
+    idToken,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+
+  const { sub: googleId, email, name, picture, email_verified } = payload;
+
+  if (!email_verified) {
+    throw new Error("Google email is not verified");
+  }
+
+  // Find existing user by email
+  let user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (user) {
+    // Existing LOCAL account → Link Google account
+    if (!user.googleId) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId,
+          provider: "GOOGLE",
+          avatar: picture,
+        },
+      });
+    }
+
+    // Existing Google account → Update avatar if changed
+    else {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          avatar: picture,
+        },
+      });
+    }
+  } else {
+    // First time Google login → Create account
+    user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: null,
+        role: "STUDENT",
+        provider: "GOOGLE",
+        googleId,
+        avatar: picture,
+        isActive: true,
+      },
+    });
+  }
+
+  const token = generateToken({
+    id: user.id,
+    role: user.role,
+  });
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+    },
+  };
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -227,4 +308,5 @@ module.exports = {
   activateAccount,
   forgotPasswordService,
   resetPasswordService,
+  googleLoginService,
 };

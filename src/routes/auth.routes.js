@@ -4,6 +4,7 @@ const protected = require("../middleware/auth.middleware.js");
 
 router.post("/register", authController.register);
 router.post("/login", authController.login);
+router.post("/google", authController.googleLogin);
 router.get("/user/me", protected, authController.getCurrentUser);
 router.post("/activate-account", authController.activateAccountController);
 router.post("/forgot-password", authController.forgotPassword);
