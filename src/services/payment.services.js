@@ -256,7 +256,7 @@ const createRazorpayOrder = async (studentId, courseId) => {
       status: "PENDING",
     },
   });
-    console.timeEnd("Delete Pending");
+  console.timeEnd("Delete Pending");
 
   // Check if course is already purchased
   console.time("Enrollment Check");
@@ -390,13 +390,17 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
     student.activationExpires &&
     student.activationExpires > new Date()
   ) {
-  sendActivationEmail({
-  name: student.name,
-  email: student.email,
-  token: student.activationToken,
-}).catch((err) => {
-   console.error("Activation email failed:", err);
-});
+    sendActivationEmail({
+      name: student.name,
+      email: student.email,
+      token: student.activationToken,
+    }).catch((err) => {
+      console.error("Activation email permanently failed:", {
+        userId: payment.studentId,
+        email: student.email,
+        error: err.message,
+      });
+    });
   }
 
   return updatedPayment;
