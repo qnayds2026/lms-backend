@@ -339,6 +339,88 @@ async function unpublishRecording(req, res) {
   }
 }
 
+// PATCH /api/recordings/reorder  (Instructor who owns the course, or Admin)
+// Body: { moduleId, orderedIds: [recordingId, recordingId, ...] } — the new top-to-bottom order
+async function reorderRecordings(req, res) {
+  try {
+    const { moduleId, orderedIds } = req.body;
+
+    if (!moduleId || !Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return res.status(400).json({
+        error: "moduleId and a non-empty orderedIds array are required",
+      });
+    }
+
+    const parsedModuleId = parseInt(moduleId);
+    if (isNaN(parsedModuleId)) {
+      return res.status(400).json({ error: "moduleId must be a valid number" });
+    }
+
+    const incomingIds = orderedIds.map((id) => parseInt(id));
+    if (incomingIds.some((id) => isNaN(id))) {
+      return res.status(400).json({ error: "orderedIds must all be valid numbers" });
+    }
+
+    const courseModule = await prisma.courseModule.findUnique({
+      where: { id: parsedModuleId },
+      include: {
+        course: true,
+        recordings: { select: { id: true } },
+      },
+    });
+
+    if (!courseModule) {
+      return res.status(404).json({ error: "Module not found" });
+    }
+
+    if (
+      courseModule.course.instructorId !== req.user.id &&
+      req.user.role !== "ADMIN"
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to reorder recordings in this module" });
+    }
+
+    // Guard against tampering: every id in orderedIds must actually belong
+    // to this module. We do NOT require the full set — a client working off
+    // slightly stale local state (e.g. a recording added/removed elsewhere)
+    // shouldn't hard-fail the whole reorder.
+    const existingIds = new Set(courseModule.recordings.map((r) => r.id));
+    const invalidIds = incomingIds.filter((id) => !existingIds.has(id));
+
+    if (invalidIds.length > 0) {
+      return res.status(400).json({
+        error: "Some orderedIds do not belong to this module",
+        invalidIds,
+        moduleId: parsedModuleId,
+      });
+    }
+
+    // De-dupe defensively in case the client sent the same id twice.
+    const uniqueOrderedIds = [...new Set(incomingIds)];
+
+    await prisma.$transaction(
+      uniqueOrderedIds.map((id, index) =>
+        prisma.recording.update({
+          where: { id },
+          data: { position: index },
+        })
+      )
+    );
+
+    const updated = await prisma.recording.findMany({
+      where: { moduleId: parsedModuleId },
+      orderBy: { position: "asc" },
+    });
+
+    return res.json(updated);
+  } catch (err) {
+    console.error("Error reordering recordings:", err);
+    return res.status(500).json({ error: "Failed to reorder recordings" });
+  }
+}
+
 module.exports = {
   createRecording,
   getRecordingsByModule,
@@ -346,4 +428,5 @@ module.exports = {
   deleteRecording,
   publishRecording,
   unpublishRecording,
+  reorderRecordings,
 };

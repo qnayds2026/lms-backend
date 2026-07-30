@@ -7,6 +7,7 @@ const {
   deleteRecording,
   publishRecording,
   unpublishRecording,
+  reorderRecordings,
 } = require("../controllers/recording.controller.js");
 const authMiddleware = require("../middleware/auth.middleware.js");
 const roleMiddleware = require("../middleware/role.middleware.js");
@@ -19,6 +20,14 @@ router.post(
 );
 
 router.get("/module/:moduleId", authMiddleware, getRecordingsByModule);
+
+// NOTE: must be registered before "/:id" so "reorder" isn't matched as an :id param
+router.patch(
+  "/reorder",
+  authMiddleware,
+  roleMiddleware(["INSTRUCTOR", "ADMIN"]),
+  reorderRecordings
+);
 
 router.patch(
   "/:id",
