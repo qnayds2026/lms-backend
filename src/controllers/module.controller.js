@@ -127,4 +127,69 @@ const deleteModule = async (req, res) => {
   }
 };
 
-module.exports = { createModule, getModulesByCourse, updateModule, deleteModule };
+// Reorder modules within a course (Instructor only)
+// Body: { courseId, orderedIds: [moduleId, moduleId, ...] } — new top-to-bottom order
+const reorderModules = async (req, res) => {
+  const { courseId, orderedIds } = req.body;
+
+  if (!courseId || !Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return res.status(400).json({ message: "courseId and a non-empty orderedIds array are required" });
+  }
+
+  const parsedCourseId = parseInt(courseId);
+  if (isNaN(parsedCourseId)) {
+    return res.status(400).json({ message: "courseId must be a valid number" });
+  }
+
+  const incomingIds = orderedIds.map((id) => parseInt(id));
+  if (incomingIds.some((id) => isNaN(id))) {
+    return res.status(400).json({ message: "orderedIds must all be valid numbers" });
+  }
+
+  try {
+    const course = await prisma.course.findUnique({ where: { id: parsedCourseId } });
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    if (course.instructorId !== req.user.id && req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Not authorized to manage modules for this course" });
+    }
+
+    const existingModules = await prisma.courseModule.findMany({
+      where: { courseId: parsedCourseId },
+      select: { id: true },
+    });
+    const existingIds = new Set(existingModules.map((m) => m.id));
+
+    const invalidIds = incomingIds.filter((id) => !existingIds.has(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({
+        message: "Some orderedIds do not belong to this course",
+        invalidIds,
+        courseId: parsedCourseId,
+      });
+    }
+
+    const uniqueOrderedIds = [...new Set(incomingIds)];
+
+    await prisma.$transaction(
+      uniqueOrderedIds.map((id, index) =>
+        prisma.courseModule.update({
+          where: { id },
+          data: { position: index },
+        })
+      )
+    );
+
+    const updated = await prisma.courseModule.findMany({
+      where: { courseId: parsedCourseId },
+      orderBy: { position: "asc" },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { createModule, getModulesByCourse, updateModule, deleteModule, reorderModules };
