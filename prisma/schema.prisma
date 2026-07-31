@@ -48,6 +48,8 @@ model Course {
   title       String
   description String? @db.Text
   thumbnail   String?
+  communityLink String?
+  instructorPhone  String?
   price       Decimal @db.Decimal(10, 2)
   isPublished Boolean @default(false)
 

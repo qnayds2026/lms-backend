@@ -2,7 +2,15 @@ const prisma = require("../lib/prisma");
 
 // Create course
 const createCourse = async (req, res) => {
-  const { title, description, thumbnail, price, instructorId } = req.body;
+  const {
+    title,
+    description,
+    thumbnail,
+    price,
+    instructorId,
+    communityLink,
+    instructorPhone,
+  } = req.body;
 
   if (!title || !title.trim()) {
     return res.status(400).json({ message: "Title is required" });
@@ -51,6 +59,8 @@ const createCourse = async (req, res) => {
         thumbnail,
         price: parsedPrice,
         instructorId: assignedInstructorId,
+        communityLink,
+        instructorPhone,
       },
       include: {
         instructor: {
@@ -74,7 +84,9 @@ const getAllCourses = async (req, res) => {
   try {
     const courses = await prisma.course.findMany({
       where: { isPublished: true },
-      include: { instructor: { select: { id: true, name: true } } },
+      include: {
+        instructor: { select: { id: true, name: true } },
+      },
     });
     res.json(courses);
   } catch (err) {
@@ -166,7 +178,15 @@ const updateCourse = async (req, res) => {
 
     // Whitelist editable fields only — never trust req.body directly.
     // instructorId, id, createdAt, etc. can never be overwritten this way.
-    const { title, description, thumbnail, price, isPublished } = req.body;
+    const {
+      title,
+      description,
+      thumbnail,
+      price,
+      isPublished,
+      communityLink,
+      instructorPhone,
+    } = req.body;
     const data = {};
 
     if (title !== undefined) {
@@ -186,6 +206,13 @@ const updateCourse = async (req, res) => {
       }
       data.price = parsedPrice;
     }
+    if (communityLink !== undefined) {
+      data.communityLink = communityLink;
+    }
+
+    if (instructorPhone !== undefined) {
+      data.instructorPhone = instructorPhone;
+    }
     // Only admins can toggle publish status directly here
     if (isPublished !== undefined) {
       if (req.user.role !== "ADMIN") {
@@ -199,6 +226,14 @@ const updateCourse = async (req, res) => {
     const updated = await prisma.course.update({
       where: { id: parsedId },
       data,
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
     res.json(updated);
   } catch (err) {
@@ -251,8 +286,22 @@ const deleteCourse = async (req, res) => {
 const myCourses = async (req, res) => {
   try {
     const courses = await prisma.course.findMany({
-      where: { instructorId: req.user.id },
-      include: { _count: { select: { enrollments: true } } },
+      where: {
+        instructorId: req.user.id,
+      },
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            enrollments: true,
+          },
+        },
+      },
     });
     res.json(courses);
   } catch (err) {
