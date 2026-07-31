@@ -120,7 +120,6 @@ const createLandingOrder = async (req, res) => {
   }
 };
 
-
 const resendActivationEmail = async (req, res) => {
   try {
     const { email } = req.body;
@@ -181,14 +180,14 @@ const resendActivationEmail = async (req, res) => {
   } catch (error) {
     console.error("Resend Activation Error:", error);
 
-   console.error("Resend Activation Error:", error);
-console.error("Message:", error.message);
-console.error("Stack:", error.stack);
+    console.error("Resend Activation Error:", error);
+    console.error("Message:", error.message);
+    console.error("Stack:", error.stack);
 
-return res.status(500).json({
-  success: false,
-  message: error.message,
-});
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
