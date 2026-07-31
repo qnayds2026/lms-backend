@@ -29,6 +29,7 @@ const registerUser = async (userData) => {
       phone,
       password: hashedPassword,
       role,
+      isActive: true,
     },
   });
 
