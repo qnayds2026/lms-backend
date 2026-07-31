@@ -390,17 +390,21 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
     student.activationExpires &&
     student.activationExpires > new Date()
   ) {
-    sendActivationEmail({
-      name: student.name,
-      email: student.email,
-      token: student.activationToken,
-    }).catch((err) => {
-      console.error("Activation email permanently failed:", {
+    try {
+      await sendActivationEmail({
+        name: student.name,
+        email: student.email,
+        token: student.activationToken,
+      });
+
+      console.log("✅ Activation email sent successfully");
+    } catch (err) {
+      console.error("❌ Activation email failed:", {
         userId: payment.studentId,
         email: student.email,
-        error: err.message,
+        error: err.response?.data || err.message,
       });
-    });
+    }
   }
 
   return updatedPayment;
