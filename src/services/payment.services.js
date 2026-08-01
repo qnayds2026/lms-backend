@@ -51,6 +51,7 @@ const createManualPayment = async (studentId, courseId, amount) => {
           id: true,
           name: true,
           email: true,
+          phone:true,
         },
       },
       course: {
@@ -207,6 +208,7 @@ const getAllPayments = async () => {
           id: true,
           name: true,
           email: true,
+          phone:true,
         },
       },
       course: {
