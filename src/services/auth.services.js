@@ -62,6 +62,12 @@ const loginUser = async (userData) => {
     throw new Error("Invalid email or password");
   }
 
+  if (!user.password) {
+    throw new Error(
+      "This account was created using Google. Please sign in with Google.",
+    );
+  }
+
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
@@ -246,6 +252,12 @@ const googleLoginService = async (idToken) => {
   let user = await prisma.user.findUnique({
     where: { email },
   });
+
+  if (user && !user.isActive) {
+    throw new Error(
+      "Your account has not been activated yet. Please activate your account before signing in with Google.",
+    );
+  }
 
   if (user) {
     // Existing LOCAL account → Link Google account
