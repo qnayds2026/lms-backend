@@ -41,6 +41,7 @@ model User {
   enrollments   Enrollment[]
   payments      Payment[]
   notifications Notification[]
+  reviews       Review[]
 }
 
 model Course {
@@ -63,6 +64,7 @@ model Course {
   liveClasses LiveClass[]
   enrollments Enrollment[]
   payments    Payment[]
+  reviews     Review[]
 
   @@index([instructorId])
 }
@@ -201,6 +203,25 @@ model ModuleAttachment {
   module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@index([moduleId])
+}
+
+model Review {
+  id      Int     @id @default(autoincrement())
+  rating  Int
+  comment String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentId Int
+  student   User @relation(fields: [studentId], references: [id])
+
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // One review per student per course — re-submitting updates it (upsert)
+  @@unique([studentId, courseId])
+  @@index([courseId])
 }
 
 enum UserRole {
