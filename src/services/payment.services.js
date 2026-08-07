@@ -51,7 +51,7 @@ const createManualPayment = async (studentId, courseId, amount) => {
           id: true,
           name: true,
           email: true,
-          phone:true,
+          phone: true,
         },
       },
       course: {
@@ -208,7 +208,7 @@ const getAllPayments = async () => {
           id: true,
           name: true,
           email: true,
-          phone:true,
+          phone: true,
         },
       },
       course: {
@@ -412,6 +412,38 @@ const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
   return updatedPayment;
 };
 
+const deletePayment = async (paymentId) => {
+  const payment = await prisma.payment.findUnique({
+    where: {
+      id: Number(paymentId),
+    },
+  });
+
+  if (!payment) {
+    throw new Error("Payment not found");
+  }
+
+  // Delete pending enrollment only
+  await prisma.enrollment.deleteMany({
+    where: {
+      studentId: payment.studentId,
+      courseId: payment.courseId,
+      status: "PENDING",
+    },
+  });
+
+  // Delete payment
+  await prisma.payment.delete({
+    where: {
+      id: payment.id,
+    },
+  });
+
+  return {
+    message: "Payment deleted successfully",
+  };
+};
+
 module.exports = {
   createManualPayment,
   updatePaymentStatus,
@@ -419,4 +451,5 @@ module.exports = {
   getAllPayments,
   createRazorpayOrder,
   updateRazorpayPayment,
+  deletePayment,
 };

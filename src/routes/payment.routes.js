@@ -28,6 +28,14 @@ router.patch(
   roleMiddleware("ADMIN"),
   paymentController.updateStatus,
 );
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  paymentController.deletePaymentController,
+);
+
 router.post(
   "/create-order",
   authMiddleware,

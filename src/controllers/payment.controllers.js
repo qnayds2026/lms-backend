@@ -5,6 +5,7 @@ const {
   getAllPayments,
   createRazorpayOrder,
   updateRazorpayPayment,
+  deletePayment,
 } = require("../services/payment.services");
 const crypto = require("crypto");
 
@@ -180,6 +181,22 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+const deletePaymentController = async (req, res) => {
+  try {
+    const result = await deletePayment(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createManual,
   updateStatus,
@@ -188,4 +205,5 @@ module.exports = {
   createOrder,
   razorpayWebhook,
   verifyPayment,
+  deletePaymentController,
 };

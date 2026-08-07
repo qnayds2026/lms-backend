@@ -37,6 +37,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://lms.qnayds.in",
   "https://qnayds.in",
+  "https://ai.qnayds.in",
   "https://www.qnayds.in",
   "https://jeh.qnayds.in",
 ];
