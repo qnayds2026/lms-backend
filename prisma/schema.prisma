@@ -42,6 +42,7 @@ model User {
   payments      Payment[]
   notifications Notification[]
   reviews       Review[]
+  notes ModuleNote[]
 }
 
 model Course {
@@ -83,6 +84,7 @@ model CourseModule {
 
   recordings  Recording[]
   attachments ModuleAttachment[]
+  notes ModuleNote[]
 
   @@index([courseId])
 }
@@ -222,6 +224,25 @@ model Review {
   // One review per student per course — re-submitting updates it (upsert)
   @@unique([studentId, courseId])
   @@index([courseId])
+}
+
+model ModuleNote {
+  id Int @id @default(autoincrement())
+
+  title       String
+  description String @db.Text
+
+  referenceVideo String?
+  referenceLink  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  moduleId Int
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  createdBy Int
+  creator User @relation(fields: [createdBy], references: [id])
 }
 
 enum UserRole {
