@@ -15,14 +15,14 @@ const liveclassRoutes = require("./src/routes/liveclass.routes.js");
 const recordingRoutes = require("./src/routes/recording.routes.js");
 const moduleRoutes = require("./src/routes/module.routes.js");
 const moduleAttachmentRoutes = require("./src/routes/moduleAttachment.routes.js");
+const noteRoutes = require("./src/routes/note.routes.js");
 
 const adminRoutes = require("./src/routes/admin.routes.js");
 const userRoutes = require("./src/routes/userRoutes.js");
 const googleAuthRoutes = require("./src/routes/googleAuth.routes.js");
 
 const landingRoutes = require("./src/routes/landing.routes.js");
-const reviewRoutes = require("./src/routes/review.routes.js");   
-
+const reviewRoutes = require("./src/routes/review.routes.js");
 
 const app = express();
 
@@ -74,6 +74,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/recordings", recordingRoutes);
 app.use("/api/modules", moduleRoutes);
 app.use("/api/module-attachments", moduleAttachmentRoutes);
+app.use("/api/notes", noteRoutes);
 app.use("/api/landing", landingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
