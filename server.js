@@ -23,6 +23,7 @@ const googleAuthRoutes = require("./src/routes/googleAuth.routes.js");
 
 const landingRoutes = require("./src/routes/landing.routes.js");
 const reviewRoutes = require("./src/routes/review.routes.js");
+const progressRoutes = require("./src/routes/progress.routes.js");
 
 const app = express();
 
@@ -78,6 +79,7 @@ app.use("/api/notes", noteRoutes);
 app.use("/api/landing", landingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/progress", progressRoutes);
 
 const PORT = process.env.PORT || 3000;
 

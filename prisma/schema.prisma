@@ -13,14 +13,13 @@ enum AuthProvider {
 }
 
 model User {
-  id     Int    @id @default(autoincrement())
-  name   String
-  email  String @unique
-  phone  String?
+  id       Int      @id @default(autoincrement())
+  name     String
+  email    String   @unique
+  phone    String?
   password String?
   role     UserRole @default(STUDENT)
   isActive Boolean  @default(false)
-
 
   provider AuthProvider @default(LOCAL)
 
@@ -36,24 +35,25 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  courses       Course[]       @relation("InstructorCourses")
+  courses       Course[]          @relation("InstructorCourses")
   liveClasses   LiveClass[]
   enrollments   Enrollment[]
   payments      Payment[]
   notifications Notification[]
   reviews       Review[]
-  notes ModuleNote[]
+  notes         ModuleNote[]
+  progress      StudentProgress[]
 }
 
 model Course {
-  id          Int     @id @default(autoincrement())
-  title       String
-  description String? @db.Text
-  thumbnail   String?
-  communityLink String?
-  instructorPhone  String?
-  price       Decimal @db.Decimal(10, 2)
-  isPublished Boolean @default(false)
+  id              Int     @id @default(autoincrement())
+  title           String
+  description     String? @db.Text
+  thumbnail       String?
+  communityLink   String?
+  instructorPhone String?
+  price           Decimal @db.Decimal(10, 2)
+  isPublished     Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,7 +84,7 @@ model CourseModule {
 
   recordings  Recording[]
   attachments ModuleAttachment[]
-  notes ModuleNote[]
+  notes       ModuleNote[]
 
   @@index([courseId])
 }
@@ -104,6 +104,8 @@ model Recording {
 
   moduleId Int
   module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  progress StudentProgress[]
 
   @@index([moduleId])
 }
@@ -239,10 +241,28 @@ model ModuleNote {
   updatedAt DateTime @updatedAt
 
   moduleId Int
-  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   createdBy Int
-  creator User @relation(fields: [createdBy], references: [id])
+  creator   User @relation(fields: [createdBy], references: [id])
+}
+
+model StudentProgress {
+  id          Int       @id @default(autoincrement())
+  studentId   Int
+  recordingId Int
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recording Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, recordingId])
+  @@index([studentId])
+  @@index([recordingId])
 }
 
 enum UserRole {
@@ -260,6 +280,7 @@ enum LiveClassStatus {
 enum EnrollmentStatus {
   PENDING
   ACTIVE
+  COMPLETED
   EXPIRED
   CANCELLED
 }
