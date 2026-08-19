@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { createCertificate } = require("./certificate.services");
 
 const completeRecording = async (studentId, recordingId) => {
   const recording = await prisma.recording.findUnique({
@@ -93,8 +94,10 @@ const completeRecording = async (studentId, recordingId) => {
   const courseCompleted = totalLessons > 0 && completedCount === totalLessons;
 
   // Mark enrollment completed
+  let certificate = null;
+
   if (courseCompleted) {
-    await prisma.enrollment.update({
+    const completedEnrollment = await prisma.enrollment.update({
       where: {
         studentId_courseId: {
           studentId: Number(studentId),
@@ -105,6 +108,12 @@ const completeRecording = async (studentId, recordingId) => {
         status: "COMPLETED",
       },
     });
+
+    certificate = await createCertificate({
+      studentId,
+      courseId: recording.module.courseId,
+      enrollmentId: completedEnrollment.id,
+    });
   }
 
   return {
@@ -112,6 +121,7 @@ const completeRecording = async (studentId, recordingId) => {
     courseCompleted,
     completedLessons: completedCount,
     totalLessons,
+    certificate,
   };
 };
 
@@ -154,7 +164,7 @@ const getCourseProgress = async (studentId, courseId) => {
     throw new Error("You are not enrolled in this course");
   }
 
-  if (enrollment.status !== "ACTIVE") {
+  if (enrollment.status !== "ACTIVE" && enrollment.status !== "COMPLETED") {
     throw new Error("Your enrollment is not active");
   }
 

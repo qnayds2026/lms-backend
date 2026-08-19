@@ -43,6 +43,7 @@ model User {
   reviews       Review[]
   notes         ModuleNote[]
   progress      StudentProgress[]
+  certificates  Certificate[]
 }
 
 model Course {
@@ -66,6 +67,8 @@ model Course {
   enrollments Enrollment[]
   payments    Payment[]
   reviews     Review[]
+
+  certificates Certificate[]
 
   @@index([instructorId])
 }
@@ -149,6 +152,8 @@ model Enrollment {
 
   enrolledAt DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  certificate Certificate?
 
   @@unique([studentId, courseId])
 }
@@ -263,6 +268,28 @@ model StudentProgress {
   @@unique([studentId, recordingId])
   @@index([studentId])
   @@index([recordingId])
+}
+
+model Certificate {
+  id                Int    @id @default(autoincrement())
+  certificateNumber String @unique
+  verificationCode  String @unique
+
+  studentId Int
+  student   User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  enrollmentId Int        @unique
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  issuedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([courseId])
 }
 
 enum UserRole {
