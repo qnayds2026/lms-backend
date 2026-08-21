@@ -23,6 +23,9 @@ const googleAuthRoutes = require("./src/routes/googleAuth.routes.js");
 
 const landingRoutes = require("./src/routes/landing.routes.js");
 const reviewRoutes = require("./src/routes/review.routes.js");
+const progressRoutes = require("./src/routes/progress.routes.js");
+const certificateRoutes = require("./src/routes/certificate.routes.js");
+const webinarRoutes = require("./src/routes/webinar.routes.js");
 
 const app = express();
 
@@ -35,6 +38,7 @@ app.use(morgan("combined"));
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:3001",
   "https://lms.qnayds.in",
   "https://qnayds.in",
   "https://ai.qnayds.in",
@@ -78,6 +82,9 @@ app.use("/api/notes", noteRoutes);
 app.use("/api/landing", landingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/progress", progressRoutes);
+app.use("/api/certificates", certificateRoutes);
+app.use("/api/webinar", webinarRoutes);
 
 const PORT = process.env.PORT || 3000;
 
