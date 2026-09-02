@@ -1,87 +1,100 @@
 const prisma = require("../lib/prisma");
 const razorpay = require("../config/razorpay");
+const { redis } = require("../config/redis");
 const { createNotification } = require("./notification.services");
 const { sendActivationEmail } = require("./email.services");
 
 const createManualPayment = async (studentId, courseId, amount) => {
-  // Check student
-  const student = await prisma.user.findUnique({
-    where: { id: studentId },
+  const lockKey = `payment:manual:${studentId}:${courseId}`;
+
+  const locked = await redis.set(lockKey, "1", {
+    NX: true,
+    EX: 10,
   });
 
-  if (!student) {
-    throw new Error("Student not found");
+  if (!locked) {
+    throw new Error("Payment request is already being processed. Please wait.");
   }
 
-  // Check course
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-  });
+  try {
+    const student = await prisma.user.findUnique({
+      where: { id: studentId },
+    });
 
-  if (!course) {
-    throw new Error("Course not found");
-  }
+    if (!student) {
+      throw new Error("Student not found");
+    }
 
-  // Check existing payment
-  const existingPayment = await prisma.payment.findFirst({
-    where: {
-      studentId,
-      courseId,
-      status: {
-        in: ["PENDING", "SUCCESS"],
-      },
-    },
-  });
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+    });
 
-  if (existingPayment) {
-    throw new Error("Payment already exists for this course");
-  }
+    if (!course) {
+      throw new Error("Course not found");
+    }
 
-  const payment = await prisma.payment.create({
-    data: {
-      amount,
-      paymentMethod: "MANUAL",
-      status: "PENDING",
-      studentId,
-      courseId,
-    },
-    include: {
-      student: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-        },
-      },
-      course: {
-        select: {
-          id: true,
-          title: true,
-          price: true,
-        },
-      },
-    },
-  });
-
-  const existingEnrollment = await prisma.enrollment.findFirst({
-    where: {
-      studentId,
-      courseId,
-    },
-  });
-
-  if (!existingEnrollment) {
-    await prisma.enrollment.create({
-      data: {
+    const existingPayment = await prisma.payment.findFirst({
+      where: {
         studentId,
         courseId,
-        status: "PENDING",
+        status: {
+          in: ["PENDING", "SUCCESS"],
+        },
       },
     });
-  }
 
-  return payment;
+    if (existingPayment) {
+      throw new Error("Payment already exists for this course");
+    }
+
+    const payment = await prisma.payment.create({
+      data: {
+        amount,
+        paymentMethod: "MANUAL",
+        status: "PENDING",
+        studentId,
+        courseId,
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        course: {
+          select: {
+            id: true,
+            title: true,
+            price: true,
+          },
+        },
+      },
+    });
+
+    const existingEnrollment = await prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        courseId,
+      },
+    });
+
+    if (!existingEnrollment) {
+      await prisma.enrollment.create({
+        data: {
+          studentId,
+          courseId,
+          status: "PENDING",
+        },
+      });
+    }
+
+    return payment;
+  } finally {
+    await redis.del(lockKey);
+  }
 };
 
 const updatePaymentStatus = async (paymentId, status) => {
@@ -226,92 +239,120 @@ const getAllPayments = async () => {
 };
 
 const createRazorpayOrder = async (studentId, courseId) => {
-  console.time("Course");
-  const course = await prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
-  });
-  console.timeEnd("Course");
+  const lockKey = `payment:razorpay:${studentId}:${courseId}`;
 
-  if (!course) {
-    throw new Error("Course not found");
+  // Prevent multiple simultaneous Razorpay order creations
+  const locked = await redis.set(lockKey, "1", {
+    NX: true,
+    EX: 15,
+  });
+
+  if (!locked) {
+    throw new Error("Payment request is already being processed. Please wait.");
   }
 
-  // Remove abandoned Razorpay attempts
-  console.time("Delete Pending");
-  await prisma.payment.deleteMany({
-    where: {
-      studentId,
-      courseId,
-      paymentMethod: "RAZORPAY",
-      status: "PENDING",
-    },
-  });
+  try {
+    console.time("Course");
 
-  // Remove pending enrollment from abandoned attempts
+    const course = await prisma.course.findUnique({
+      where: {
+        id: courseId,
+      },
+    });
 
-  await prisma.enrollment.deleteMany({
-    where: {
-      studentId,
-      courseId,
-      status: "PENDING",
-    },
-  });
-  console.timeEnd("Delete Pending");
+    console.timeEnd("Course");
 
-  // Check if course is already purchased
-  console.time("Enrollment Check");
-  const existingEnrollment = await prisma.enrollment.findFirst({
-    where: {
-      studentId,
-      courseId,
-      status: "ACTIVE",
-    },
-  });
-  console.timeEnd("Enrollment Check");
+    if (!course) {
+      throw new Error("Course not found");
+    }
 
-  if (existingEnrollment) {
-    throw new Error("Course already purchased");
+    // Remove abandoned Razorpay attempts
+    console.time("Delete Pending");
+
+    await prisma.payment.deleteMany({
+      where: {
+        studentId,
+        courseId,
+        paymentMethod: "RAZORPAY",
+        status: "PENDING",
+      },
+    });
+
+    // Remove pending enrollment from abandoned attempts
+    await prisma.enrollment.deleteMany({
+      where: {
+        studentId,
+        courseId,
+        status: "PENDING",
+      },
+    });
+
+    console.timeEnd("Delete Pending");
+
+    // Check if course is already purchased
+    console.time("Enrollment Check");
+
+    const existingEnrollment = await prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        courseId,
+        status: "ACTIVE",
+      },
+    });
+
+    console.timeEnd("Enrollment Check");
+
+    if (existingEnrollment) {
+      throw new Error("Course already purchased");
+    }
+
+    // Create Razorpay order
+    console.time("Razorpay");
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(Number(course.price) * 100),
+      currency: "INR",
+      receipt: `order_${Date.now()}`,
+    });
+
+    console.log("Payment service loaded");
+    console.log(order);
+
+    console.timeEnd("Razorpay");
+
+    // Create payment record
+    console.time("Create Records");
+
+    await prisma.payment.create({
+      data: {
+        amount: course.price,
+        paymentMethod: "RAZORPAY",
+        status: "PENDING",
+        studentId,
+        courseId,
+        razorpayOrderId: order.id,
+      },
+    });
+
+    // Create pending enrollment
+    await prisma.enrollment.create({
+      data: {
+        studentId,
+        courseId,
+        status: "PENDING",
+      },
+    });
+
+    console.timeEnd("Create Records");
+
+    return {
+      order,
+      course,
+    };
+  } finally {
+    // Always release the lock
+    await redis.del(lockKey);
   }
-
-  console.time("Razorpay");
-  const order = await razorpay.orders.create({
-    amount: Math.round(Number(course.price) * 100),
-    currency: "INR",
-    receipt: `order_${Date.now()}`,
-  });
-  console.log("Payment service loaded");
-  console.log(order);
-  console.timeEnd("Razorpay");
-
-  // Create payment record
-  console.time("Create Records");
-  await prisma.payment.create({
-    data: {
-      amount: course.price,
-      paymentMethod: "RAZORPAY",
-      status: "PENDING",
-      studentId,
-      courseId,
-      razorpayOrderId: order.id,
-    },
-  });
-
-  // Create pending enrollment
-  await prisma.enrollment.create({
-    data: {
-      studentId,
-      courseId,
-      status: "PENDING",
-    },
-  });
-  console.timeEnd("Create Records");
-
-  return {
-    order,
-    course,
-  };
 };
 
 const updateRazorpayPayment = async (razorpayOrderId, transactionId) => {
