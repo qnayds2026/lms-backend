@@ -3,9 +3,9 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const { connectRedis } = require("./src/config/redis.js");
 const authRoutes = require("./src/routes/auth.routes.js");
 const enrollmentRoutes = require("./src/routes/enrollment.routes.js");
-const paymentRoutes = require("./src/routes/payment.routes.js");
 const notificationRoutes = require("./src/routes/notification.routes.js");
 const dashboardRoutes = require("./src/routes/dashboard.routes.js");
 
@@ -68,7 +68,6 @@ app.get("/", (req, res) => {
 });
 app.use("/api/auth", authRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
-app.use("/api/payments", paymentRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/liveclasses", liveclassRoutes);
 
@@ -96,7 +95,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("PORT ENV =", process.env.PORT);
-  console.log(`Server is running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    // Connect Redis BEFORE loading payment routes
+    await connectRedis();
+
+    // Load payment routes only after Redis is connected
+    const paymentRoutes = require("./src/routes/payment.routes.js");
+
+    app.use("/api/payments", paymentRoutes);
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log("PORT ENV =", process.env.PORT);
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to connect to Redis:", error);
+    process.exit(1);
+  }
+};
+
+startServer();

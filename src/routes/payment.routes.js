@@ -3,11 +3,13 @@ const paymentController = require("../controllers/payment.controllers");
 
 const authMiddleware = require("../middleware/auth.middleware");
 const roleMiddleware = require("../middleware/role.middleware");
+const paymentRateLimiter = require("../middleware/paymentRateLimiter");
 
 router.post(
   "/manual",
   authMiddleware,
   roleMiddleware("STUDENT"),
+  paymentRateLimiter,
   paymentController.createManual,
 );
 router.get(
@@ -40,6 +42,7 @@ router.post(
   "/create-order",
   authMiddleware,
   roleMiddleware("STUDENT"),
+  paymentRateLimiter,
   paymentController.createOrder,
 );
 router.post("/webhook", paymentController.razorpayWebhook);
