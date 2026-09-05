@@ -169,28 +169,33 @@ const activateAccount = async (token, password) => {
     message: "Account activated successfully.",
   };
 };
-
 const forgotPasswordService = async (email) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
   const user = await prisma.user.findUnique({
     where: {
-      email,
+      email: normalizedEmail,
     },
   });
 
-  // Don't reveal whether the email exists — always resolve the same way
+  // Don't reveal whether the email exists
   if (!user) {
     return;
   }
 
   const rawToken = crypto.randomBytes(32).toString("hex");
+
   const hashedToken = crypto
     .createHash("sha256")
     .update(rawToken)
     .digest("hex");
-  const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  const expiry = new Date(Date.now() + 60 * 60 * 1000);
 
   await prisma.user.update({
-    where: { id: user.id },
+    where: {
+      id: user.id,
+    },
     data: {
       resetToken: hashedToken,
       resetTokenExpiry: expiry,
