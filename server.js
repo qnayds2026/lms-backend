@@ -44,6 +44,8 @@ const allowedOrigins = [
   "https://ai.qnayds.in",
   "https://www.qnayds.in",
   "https://jeh.qnayds.in",
+  "https://ai-excel.qnayds.in",
+  "https://ai-teachers.qnayds.in",
 ];
 
 app.use(
