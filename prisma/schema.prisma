@@ -35,15 +35,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  courses       Course[]          @relation("InstructorCourses")
-  liveClasses   LiveClass[]
-  enrollments   Enrollment[]
-  payments      Payment[]
-  notifications Notification[]
-  reviews       Review[]
-  notes         ModuleNote[]
-  progress      StudentProgress[]
-  certificates  Certificate[]
+  courses              Course[]              @relation("InstructorCourses")
+  liveClasses          LiveClass[]
+  enrollments          Enrollment[]
+  payments             Payment[]
+  notifications        Notification[]
+  reviews              Review[]
+  notes                ModuleNote[]
+  progress             StudentProgress[]
+  certificates         Certificate[]
+  programRegistrations ProgramRegistration[]
 }
 
 model Course {
@@ -275,14 +276,21 @@ model Certificate {
   certificateNumber String @unique
   verificationCode  String @unique
 
+  type CertificateType
+
   studentId Int
   student   User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  courseId Int
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  // Course certificate
+  courseId Int?
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  enrollmentId Int        @unique
-  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  enrollmentId Int?        @unique
+  enrollment   Enrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  // Webinar / Internship / Workshop certificate
+  programRegistrationId Int?                 @unique
+  programRegistration   ProgramRegistration? @relation(fields: [programRegistrationId], references: [id], onDelete: Cascade)
 
   issuedAt  DateTime @default(now())
   createdAt DateTime @default(now())
@@ -290,6 +298,53 @@ model Certificate {
 
   @@index([studentId])
   @@index([courseId])
+  @@index([type])
+}
+
+model Program {
+  id          Int         @id @default(autoincrement())
+  title       String
+  description String?     @db.Text
+  type        ProgramType
+
+  startDate DateTime?
+  endDate   DateTime?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  registrations ProgramRegistration[]
+
+  @@index([type])
+}
+
+model ProgramRegistration {
+  id Int @id @default(autoincrement())
+
+  name  String
+  email String
+  phone String?
+
+  // Connected after the student creates/logs into LMS
+  studentId Int?
+  student   User? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+
+  programId Int
+  program   Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  certificateRequestStatus CertificateRequestStatus @default(PENDING)
+
+  certificate Certificate?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([programId, email])
+  @@index([email])
+  @@index([studentId])
+  @@index([programId])
 }
 
 enum UserRole {
@@ -327,4 +382,23 @@ enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
+}
+
+enum ProgramType {
+  WEBINAR
+  INTERNSHIP
+  WORKSHOP
+}
+
+enum CertificateRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CertificateType {
+  COURSE
+  WEBINAR
+  INTERNSHIP
+  WORKSHOP
 }
