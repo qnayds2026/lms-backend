@@ -26,6 +26,7 @@ const reviewRoutes = require("./src/routes/review.routes.js");
 const progressRoutes = require("./src/routes/progress.routes.js");
 const certificateRoutes = require("./src/routes/certificate.routes.js");
 const webinarRoutes = require("./src/routes/webinar.routes.js");
+const programRegistrationRoutes = require("./src/routes/programRegistration.routes.js");
 
 const app = express();
 
@@ -86,6 +87,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/webinar", webinarRoutes);
+app.use("/api/program-registrations", programRegistrationRoutes);
 
 const PORT = process.env.PORT || 3000;
 
@@ -106,15 +108,18 @@ const startServer = async () => {
     const paymentRoutes = require("./src/routes/payment.routes.js");
 
     app.use("/api/payments", paymentRoutes);
-
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log("PORT ENV =", process.env.PORT);
-      console.log(`Server is running on port ${PORT}`);
-    });
   } catch (error) {
-    console.error("Failed to connect to Redis:", error);
-    process.exit(1);
+    console.error("Warning: Redis connection failed. Payment routes will be disabled.", error.message);
   }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log("PORT ENV =", process.env.PORT);
+    console.log(`Server is running on port ${PORT}`);
+  });
 };
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
