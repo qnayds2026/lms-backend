@@ -4,9 +4,18 @@ const {
   getRegistrationById,
   searchRegistrationByEmail,
   getRegistrationStatus,
+  getMyProgramRegistrations,
+  requestCertificate,
+  getAllCertificateRequests,
+  getCertificateRequestById,
+  approveCertificateRequest,
+  rejectCertificateRequest,
 } = require("../services/programRegistration.services");
 
-// Register for a Program
+// ==========================================
+// Registration (Task 2)
+// ==========================================
+
 const register = async (req, res) => {
   try {
     const registration = await registerForProgram(
@@ -27,7 +36,10 @@ const register = async (req, res) => {
   }
 };
 
-// Get Registrations for a Program (Admin)
+// ==========================================
+// Admin — View registrations (Task 3)
+// ==========================================
+
 const getByProgram = async (req, res) => {
   try {
     const registrations = await getRegistrationsByProgram(
@@ -47,7 +59,6 @@ const getByProgram = async (req, res) => {
   }
 };
 
-// Get Single Registration (Admin)
 const getOne = async (req, res) => {
   try {
     const registration = await getRegistrationById(req.params.id);
@@ -64,7 +75,6 @@ const getOne = async (req, res) => {
   }
 };
 
-// Search Registration by Email (Admin)
 const search = async (req, res) => {
   try {
     const registrations = await searchRegistrationByEmail(req.query.email);
@@ -82,7 +92,6 @@ const search = async (req, res) => {
   }
 };
 
-// Get Registration Status (Admin)
 const getStatus = async (req, res) => {
   try {
     const status = await getRegistrationStatus(req.params.id);
@@ -99,10 +108,138 @@ const getStatus = async (req, res) => {
   }
 };
 
+// ==========================================
+// Dilshad: Student <-> Certificate flow
+// ==========================================
+
+const getMyProgramsController = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const registrations = await getMyProgramRegistrations(studentId);
+
+    return res.status(200).json({
+      success: true,
+      message: "External programs fetched successfully.",
+      count: registrations.length,
+      data: registrations,
+    });
+  } catch (error) {
+    console.error("Get my external programs error:", error);
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to fetch external programs.",
+    });
+  }
+};
+
+const requestCertificateController = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const { id } = req.params;
+
+    const registration = await requestCertificate(studentId, id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Certificate request submitted successfully.",
+      data: registration,
+    });
+  } catch (error) {
+    console.error("Certificate request error:", error);
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to submit certificate request.",
+    });
+  }
+};
+
+const getAllCertificateRequestsController = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const requests = await getAllCertificateRequests(status);
+
+    return res.status(200).json({
+      success: true,
+      message: "Certificate requests fetched successfully.",
+      count: requests.length,
+      data: requests,
+    });
+  } catch (error) {
+    console.error("Get certificate requests error:", error);
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to fetch certificate requests.",
+    });
+  }
+};
+
+const getCertificateRequestByIdController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const request = await getCertificateRequestById(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Certificate request fetched successfully.",
+      data: request,
+    });
+  } catch (error) {
+    console.error("Get single certificate request error:", error);
+    return res.status(error.statusCode || 404).json({
+      success: false,
+      message: error.message || "Failed to fetch certificate request.",
+    });
+  }
+};
+
+const approveCertificateRequestController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await approveCertificateRequest(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Certificate request approved successfully.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Approve certificate request error:", error);
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to approve certificate request.",
+    });
+  }
+};
+
+const rejectCertificateRequestController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await rejectCertificateRequest(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Certificate request rejected successfully.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Reject certificate request error:", error);
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to reject certificate request.",
+    });
+  }
+};
+
 module.exports = {
   register,
   getByProgram,
   getOne,
   search,
   getStatus,
+  getMyProgramsController,
+  requestCertificateController,
+  getAllCertificateRequestsController,
+  getCertificateRequestByIdController,
+  approveCertificateRequestController,
+  rejectCertificateRequestController,
 };
