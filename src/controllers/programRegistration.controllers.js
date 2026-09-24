@@ -1,5 +1,9 @@
 const {
-<<<<<<< HEAD
+  registerForProgram,
+  getRegistrationsByProgram,
+  getRegistrationById,
+  searchRegistrationByEmail,
+  getRegistrationStatus,
   getMyProgramRegistrations,
   requestCertificate,
   getAllCertificateRequests,
@@ -8,25 +12,9 @@ const {
   rejectCertificateRequest,
 } = require("../services/programRegistration.services");
 
-/**
- * Task 2: Get logged-in student's external programs
- * GET /api/program-registrations/my
- */
-const getMyProgramsController = async (req, res) => {
-  try {
-    const studentId = req.user.id;
-    const registrations = await getMyProgramRegistrations(studentId);
-
-    return res.status(200).json({
-      success: true,
-      message: "External programs fetched successfully.",
-=======
-  registerForProgram,
-  getRegistrationsByProgram,
-  getRegistrationById,
-  searchRegistrationByEmail,
-  getRegistrationStatus,
-} = require("../services/programRegistration.services");
+// ==========================================
+// Public & General Program Registration Controllers
+// ==========================================
 
 // Register for a Program
 const register = async (req, res) => {
@@ -36,15 +24,15 @@ const register = async (req, res) => {
       req.body,
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Registration successful",
       data: registration,
     });
   } catch (error) {
-    res.status(400).json({
+    return res.status(error.statusCode || 400).json({
       success: false,
-      message: error.message,
+      message: error.message || "Registration failed",
     });
   }
 };
@@ -56,37 +44,125 @@ const getByProgram = async (req, res) => {
       req.params.programId,
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
->>>>>>> origin/henna
+      message: "Registrations fetched successfully",
       count: registrations.length,
       data: registrations,
     });
   } catch (error) {
-<<<<<<< HEAD
-    console.error("Get my external programs error:", error);
     return res.status(error.statusCode || 400).json({
       success: false,
-      message: error.message || "Failed to fetch external programs.",
-=======
-    res.status(400).json({
-      success: false,
-      message: error.message,
->>>>>>> origin/henna
+      message: error.message || "Failed to fetch registrations",
     });
   }
 };
 
-<<<<<<< HEAD
+// Get Single Registration (Admin)
+const getOne = async (req, res) => {
+  try {
+    const registration = await getRegistrationById(req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Registration fetched successfully",
+      data: registration,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to fetch registration",
+    });
+  }
+};
+
+// Search Registration by Email (Admin)
+const search = async (req, res) => {
+  try {
+    const registrations = await searchRegistrationByEmail(req.query.email);
+
+    return res.status(200).json({
+      success: true,
+      message: "Registrations fetched successfully",
+      count: registrations.length,
+      data: registrations,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to search registrations",
+    });
+  }
+};
+
+// Get Registration Status (Admin)
+const getStatus = async (req, res) => {
+  try {
+    const status = await getRegistrationStatus(req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Registration status fetched successfully",
+      data: status,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to fetch registration status",
+    });
+  }
+};
+
+// ==========================================
+// Student & Certificate Controllers
+// ==========================================
+
+/**
+ * Task 2: Get logged-in student's external programs
+ * GET /api/program-registrations/my
+ */
+const getMyProgramsController = async (req, res) => {
+  try {
+    const studentId = req.user?.id;
+    if (!studentId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Student not authenticated.",
+      });
+    }
+
+    const registrations = await getMyProgramRegistrations(studentId);
+
+    return res.status(200).json({
+      success: true,
+      message: "External programs fetched successfully.",
+      count: registrations.length,
+      data: registrations,
+    });
+  } catch (error) {
+    console.error("Get my external programs error:", error);
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to fetch external programs.",
+    });
+  }
+};
+
 /**
  * Task 3: Request certificate
  * POST /api/program-registrations/:id/certificate-request
  */
 const requestCertificateController = async (req, res) => {
   try {
-    const studentId = req.user.id;
-    const { id } = req.params;
+    const studentId = req.user?.id;
+    if (!studentId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Student not authenticated.",
+      });
+    }
 
+    const { id } = req.params;
     const registration = await requestCertificate(studentId, id);
 
     return res.status(200).json({
@@ -99,26 +175,10 @@ const requestCertificateController = async (req, res) => {
     return res.status(error.statusCode || 400).json({
       success: false,
       message: error.message || "Failed to submit certificate request.",
-=======
-// Get Single Registration (Admin)
-const getOne = async (req, res) => {
-  try {
-    const registration = await getRegistrationById(req.params.id);
-
-    res.status(200).json({
-      success: true,
-      data: registration,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
->>>>>>> origin/henna
     });
   }
 };
 
-<<<<<<< HEAD
 /**
  * Task 4: Admin get certificate requests
  * GET /api/program-registrations/certificate-requests
@@ -140,27 +200,10 @@ const getAllCertificateRequestsController = async (req, res) => {
     return res.status(error.statusCode || 400).json({
       success: false,
       message: error.message || "Failed to fetch certificate requests.",
-=======
-// Search Registration by Email (Admin)
-const search = async (req, res) => {
-  try {
-    const registrations = await searchRegistrationByEmail(req.query.email);
-
-    res.status(200).json({
-      success: true,
-      count: registrations.length,
-      data: registrations,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
->>>>>>> origin/henna
     });
   }
 };
 
-<<<<<<< HEAD
 /**
  * Task 4: Admin get single certificate request
  * GET /api/program-registrations/certificate-requests/:id
@@ -227,39 +270,32 @@ const rejectCertificateRequestController = async (req, res) => {
     return res.status(error.statusCode || 400).json({
       success: false,
       message: error.message || "Failed to reject certificate request.",
-=======
-// Get Registration Status (Admin)
-const getStatus = async (req, res) => {
-  try {
-    const status = await getRegistrationStatus(req.params.id);
-
-    res.status(200).json({
-      success: true,
-      data: status,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
->>>>>>> origin/henna
     });
   }
 };
 
 module.exports = {
-<<<<<<< HEAD
+  // Public & General
+  register,
+  getByProgram,
+  getOne,
+  search,
+  getStatus,
+
+  // Student & Certificate (Controller Named)
   getMyProgramsController,
   requestCertificateController,
   getAllCertificateRequestsController,
   getCertificateRequestByIdController,
   approveCertificateRequestController,
   rejectCertificateRequestController,
+
+  // Aliases for convenience / backward-compatibility
+  getMyPrograms: getMyProgramsController,
+  getMyProgramRegistrations: getMyProgramsController,
+  requestCertificate: requestCertificateController,
+  getAllCertificateRequests: getAllCertificateRequestsController,
+  getCertificateRequestById: getCertificateRequestByIdController,
+  approveCertificateRequest: approveCertificateRequestController,
+  rejectCertificateRequest: rejectCertificateRequestController,
 };
-=======
-  register,
-  getByProgram,
-  getOne,
-  search,
-  getStatus,
-};
->>>>>>> origin/henna

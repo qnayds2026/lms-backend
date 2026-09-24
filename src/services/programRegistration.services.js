@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 const crypto = require("crypto");
 const prisma = require("../lib/prisma");
 
@@ -17,10 +16,13 @@ const matchRegistrationsByEmail = async (userId, email) => {
     },
     data: {
       studentId: Number(userId),
-=======
-const prisma = require("../lib/prisma");
+    },
+  });
+};
 
-// Register for a Program
+/**
+ * Register for a Program (external landing page)
+ */
 const registerForProgram = async (programId, data) => {
   const { name, email, phone } = data;
 
@@ -44,11 +46,15 @@ const registerForProgram = async (programId, data) => {
   });
 
   if (!program) {
-    throw new Error("Program not found");
+    const error = new Error("Program not found");
+    error.statusCode = 404;
+    throw error;
   }
 
   if (!program.isActive) {
-    throw new Error("Program is not active");
+    const error = new Error("Program is not active");
+    error.statusCode = 400;
+    throw error;
   }
 
   const existingRegistration = await prisma.programRegistration.findUnique({
@@ -61,8 +67,15 @@ const registerForProgram = async (programId, data) => {
   });
 
   if (existingRegistration) {
-    throw new Error("You have already registered for this program");
+    const error = new Error("You have already registered for this program");
+    error.statusCode = 400;
+    throw error;
   }
+
+  // Check if student exists with this email to link immediately
+  const existingUser = await prisma.user.findUnique({
+    where: { email: email.trim() },
+  });
 
   const registration = await prisma.programRegistration.create({
     data: {
@@ -70,13 +83,16 @@ const registerForProgram = async (programId, data) => {
       email,
       phone,
       programId: Number(programId),
+      ...(existingUser ? { studentId: existingUser.id } : {}),
     },
   });
 
   return registration;
 };
 
-// Get All Registrations for a Program
+/**
+ * Get All Registrations for a Program
+ */
 const getRegistrationsByProgram = async (programId) => {
   const program = await prisma.program.findUnique({
     where: {
@@ -85,21 +101,145 @@ const getRegistrationsByProgram = async (programId) => {
   });
 
   if (!program) {
-    throw new Error("Program not found");
+    const error = new Error("Program not found");
+    error.statusCode = 404;
+    throw error;
   }
 
   return await prisma.programRegistration.findMany({
     where: {
       programId: Number(programId),
     },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+      certificate: true,
+    },
     orderBy: {
       createdAt: "desc",
->>>>>>> origin/henna
     },
   });
 };
 
-<<<<<<< HEAD
+/**
+ * Get Single Registration (Admin)
+ */
+const getRegistrationById = async (id) => {
+  const registration = await prisma.programRegistration.findUnique({
+    where: {
+      id: Number(id),
+    },
+    include: {
+      program: true,
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+      certificate: true,
+    },
+  });
+
+  if (!registration) {
+    const error = new Error("Registration not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return registration;
+};
+
+/**
+ * Search Registration by Email
+ */
+const searchRegistrationByEmail = async (email) => {
+  if (!email) {
+    throw new Error("Email is required for search");
+  }
+
+  const registrations = await prisma.programRegistration.findMany({
+    where: {
+      email: {
+        contains: email,
+        mode: "insensitive",
+      },
+    },
+    include: {
+      program: true,
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+      certificate: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return registrations;
+};
+
+/**
+ * Get Registration Status
+ */
+const getRegistrationStatus = async (id) => {
+  const registration = await prisma.programRegistration.findUnique({
+    where: {
+      id: Number(id),
+    },
+    select: {
+      id: true,
+      certificateRequestStatus: true,
+    },
+  });
+
+  if (!registration) {
+    const error = new Error("Registration not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return registration;
+};
+
+/**
+ * Format certificate request output for admin APIs.
+ * Shows student name, email, program, program type, registration date, and request status.
+ */
+const formatCertificateRequest = (reg) => ({
+  id: reg.id,
+  studentId: reg.studentId,
+  studentName: reg.student?.name || reg.name,
+  name: reg.name,
+  email: reg.student?.email || reg.email,
+  phone: reg.student?.phone || reg.phone,
+  program: reg.program?.title || null,
+  programId: reg.programId,
+  programType: reg.program?.type || null,
+  registrationDate: reg.createdAt,
+  createdAt: reg.createdAt,
+  updatedAt: reg.updatedAt,
+  requestStatus: reg.certificateRequestStatus,
+  certificateRequestStatus: reg.certificateRequestStatus,
+  certificate: reg.certificate || null,
+  programDetails: reg.program || null,
+  studentDetails: reg.student || null,
+});
+
 /**
  * Get registered programs for the logged-in student.
  * Returns student's registered programs, program details, and certificate request status.
@@ -131,42 +271,6 @@ const getMyProgramRegistrations = async (studentId) => {
         },
       },
     },
-=======
-// Get Single Registration
-const getRegistrationById = async (id) => {
-  const registration = await prisma.programRegistration.findUnique({
-    where: {
-      id: Number(id),
-    },
-    include: {
-      program: true,
-    },
-  });
-
-  if (!registration) {
-    throw new Error("Registration not found");
-  }
-
-  return registration;
-};
-
-// Search Registration by Email
-const searchRegistrationByEmail = async (email) => {
-  if (!email) {
-    throw new Error("Email is required for search");
-  }
-
-  const registrations = await prisma.programRegistration.findMany({
-    where: {
-      email: {
-        contains: email,
-        mode: "insensitive",
-      },
-    },
-    include: {
-      program: true,
-    },
->>>>>>> origin/henna
     orderBy: {
       createdAt: "desc",
     },
@@ -174,31 +278,6 @@ const searchRegistrationByEmail = async (email) => {
 
   return registrations;
 };
-
-<<<<<<< HEAD
-/**
- * Format certificate request output for admin APIs.
- * Shows student name, email, program, program type, registration date, and request status.
- */
-const formatCertificateRequest = (reg) => ({
-  id: reg.id,
-  studentId: reg.studentId,
-  studentName: reg.student?.name || reg.name,
-  name: reg.name,
-  email: reg.student?.email || reg.email,
-  phone: reg.student?.phone || reg.phone,
-  program: reg.program?.title || null,
-  programId: reg.programId,
-  programType: reg.program?.type || null,
-  registrationDate: reg.createdAt,
-  createdAt: reg.createdAt,
-  updatedAt: reg.updatedAt,
-  requestStatus: reg.certificateRequestStatus,
-  certificateRequestStatus: reg.certificateRequestStatus,
-  certificate: reg.certificate || null,
-  programDetails: reg.program || null,
-  studentDetails: reg.student || null,
-});
 
 /**
  * Allow a student to request a certificate for an external program registration.
@@ -222,22 +301,10 @@ const requestCertificate = async (studentId, registrationId) => {
     include: {
       certificate: true,
       program: true,
-=======
-// Get Registration Status
-const getRegistrationStatus = async (id) => {
-  const registration = await prisma.programRegistration.findUnique({
-    where: {
-      id: Number(id),
-    },
-    select: {
-      id: true,
-      certificateRequestStatus: true,
->>>>>>> origin/henna
     },
   });
 
   if (!registration) {
-<<<<<<< HEAD
     const error = new Error("Program registration not found");
     error.statusCode = 404;
     throw error;
@@ -509,6 +576,11 @@ const rejectCertificateRequest = async (registrationId) => {
 
 module.exports = {
   matchRegistrationsByEmail,
+  registerForProgram,
+  getRegistrationsByProgram,
+  getRegistrationById,
+  searchRegistrationByEmail,
+  getRegistrationStatus,
   getMyProgramRegistrations,
   requestCertificate,
   getAllCertificateRequests,
@@ -516,18 +588,3 @@ module.exports = {
   approveCertificateRequest,
   rejectCertificateRequest,
 };
-=======
-    throw new Error("Registration not found");
-  }
-
-  return registration;
-};
-
-module.exports = {
-  registerForProgram,
-  getRegistrationsByProgram,
-  getRegistrationById,
-  searchRegistrationByEmail,
-  getRegistrationStatus,
-};
->>>>>>> origin/henna

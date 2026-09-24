@@ -26,13 +26,9 @@ const reviewRoutes = require("./src/routes/review.routes.js");
 const progressRoutes = require("./src/routes/progress.routes.js");
 const certificateRoutes = require("./src/routes/certificate.routes.js");
 const webinarRoutes = require("./src/routes/webinar.routes.js");
-<<<<<<< HEAD
-const programRegistrationRoutes = require("./src/routes/programRegistration.routes.js");
-=======
 const programRoutes = require("./src/routes/program.routes.js");
 const programRegistrationRoutes = require("./src/routes/programRegistration.routes.js");
 const registrationRoutes = require("./src/routes/registration.routes.js");
->>>>>>> origin/henna
 
 const app = express();
 
@@ -93,13 +89,9 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/webinar", webinarRoutes);
-<<<<<<< HEAD
-app.use("/api/program-registrations", programRegistrationRoutes);
-=======
 app.use("/api/programs", programRoutes);
-app.use("/api/programs", programRegistrationRoutes);
+app.use("/api/program-registrations", programRegistrationRoutes);
 app.use("/api/registrations", registrationRoutes);
->>>>>>> origin/henna
 
 const PORT = process.env.PORT || 3000;
 
