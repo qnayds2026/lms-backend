@@ -4,6 +4,9 @@ const prisma = require("../lib/prisma.js");
 const { generateToken } = require("../utils/jwt.js");
 const { sendResetPasswordEmail } = require("../utils/email.js");
 const { OAuth2Client } = require("google-auth-library");
+const {
+  matchRegistrationsByEmail,
+} = require("./programRegistration.services.js");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -37,6 +40,9 @@ const registerUser = async (userData) => {
     id: user.id,
     role: user.role,
   });
+
+  // Task 1: Connect external program registration matching email
+  await matchRegistrationsByEmail(user.id, user.email);
 
   return {
     token,
@@ -84,6 +90,9 @@ const loginUser = async (userData) => {
     id: user.id,
     role: user.role,
   });
+
+  // Task 1: Connect external program registration matching email
+  await matchRegistrationsByEmail(user.id, user.email);
 
   return {
     token,
@@ -306,6 +315,9 @@ const googleLoginService = async (idToken) => {
     id: user.id,
     role: user.role,
   });
+
+  // Task 1: Connect external program registration matching email
+  await matchRegistrationsByEmail(user.id, user.email);
 
   return {
     token,
