@@ -1,7 +1,5 @@
 const express = require("express");
-
 const router = express.Router();
-<<<<<<< HEAD
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const {
@@ -9,21 +7,16 @@ const {
   requestCertificateController,
   getAllCertificateRequestsController,
   getCertificateRequestByIdController,
+  approveCertificateRequestController,
+  rejectCertificateRequestController,
 } = require("../controllers/programRegistration.controllers");
-=======
-
-const { register } = require("../controllers/programRegistration.controllers");
->>>>>>> origin/henna
 
 // ==========================================
-// External Program Registration
+// Student APIs (STUDENT only)
 // ==========================================
 
-<<<<<<< HEAD
-// Task 2: Get logged-in student's external programs
 router.get("/my", auth, role("STUDENT"), getMyProgramsController);
 
-// Task 3: Request certificate
 router.post(
   "/:id/certificate-request",
   auth,
@@ -35,7 +28,6 @@ router.post(
 // Admin APIs (ADMIN only)
 // ==========================================
 
-// Task 4: Get all certificate requests
 router.get(
   "/certificate-requests",
   auth,
@@ -43,16 +35,25 @@ router.get(
   getAllCertificateRequestsController,
 );
 
-// Task 4: Get single certificate request by registration ID
 router.get(
   "/certificate-requests/:id",
   auth,
   role("ADMIN"),
   getCertificateRequestByIdController,
 );
-=======
-// POST /api/programs/:programId/register
-router.post("/:programId/register", register);
->>>>>>> origin/henna
+
+router.patch(
+  "/:id/certificate-request/approve",
+  auth,
+  role("ADMIN"),
+  approveCertificateRequestController,
+);
+
+router.patch(
+  "/:id/certificate-request/reject",
+  auth,
+  role("ADMIN"),
+  rejectCertificateRequestController,
+);
 
 module.exports = router;

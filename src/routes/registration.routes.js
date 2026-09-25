@@ -3,6 +3,7 @@ const router = require("express").Router();
 const registrationController = require("../controllers/programRegistration.controllers");
 
 const authMiddleware = require("../middleware/auth.middleware");
+
 const roleMiddleware = require("../middleware/role.middleware");
 
 // Admin: Search Registration by Email
@@ -11,6 +12,14 @@ router.get(
   authMiddleware,
   roleMiddleware("ADMIN"),
   registrationController.search,
+);
+
+// Admin: Get Registrations for a Program
+router.get(
+  "/program/:programId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  registrationController.getByProgram,
 );
 
 // Admin: Get Single Registration

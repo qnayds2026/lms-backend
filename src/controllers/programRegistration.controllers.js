@@ -11,10 +11,9 @@ const {
 } = require("../services/programRegistration.services");
 
 // ==========================================
-// Public & General Program Registration Controllers
+// Registration (Task 2)
 // ==========================================
 
-// Register for a Program
 const register = async (req, res) => {
   try {
     const registration = await registerForProgram(
@@ -35,7 +34,10 @@ const register = async (req, res) => {
   }
 };
 
-// Get Registrations for a Program (Admin)
+// ==========================================
+// Admin — View registrations (Task 3)
+// ==========================================
+
 const getByProgram = async (req, res) => {
   try {
     const registrations = await getRegistrationsByProgram(
@@ -44,91 +46,73 @@ const getByProgram = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Registrations fetched successfully",
       count: registrations.length,
       data: registrations,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
+    res.status(400).json({
       success: false,
-      message: error.message || "Failed to fetch registrations",
+      message: error.message,
     });
   }
 };
 
-// Get Single Registration (Admin)
 const getOne = async (req, res) => {
   try {
     const registration = await getRegistrationById(req.params.id);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Registration fetched successfully",
       data: registration,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
+    res.status(400).json({
       success: false,
-      message: error.message || "Failed to fetch registration",
+      message: error.message,
     });
   }
 };
 
-// Search Registration by Email (Admin)
 const search = async (req, res) => {
   try {
     const registrations = await searchRegistrationByEmail(req.query.email);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Registrations fetched successfully",
       count: registrations.length,
       data: registrations,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
+    res.status(400).json({
       success: false,
-      message: error.message || "Failed to search registrations",
+      message: error.message,
     });
   }
 };
 
-// Get Registration Status (Admin)
 const getStatus = async (req, res) => {
   try {
     const status = await getRegistrationStatus(req.params.id);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Registration status fetched successfully",
       data: status,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
+    res.status(400).json({
       success: false,
-      message: error.message || "Failed to fetch registration status",
+      message: error.message,
     });
   }
 };
 
 // ==========================================
-// Student & Certificate Controllers
+// Dilshad: Student <-> Certificate flow
 // ==========================================
 
-/**
- * Task 2: Get logged-in student's external programs
- * GET /api/program-registrations/my
- */
 const getMyProgramsController = async (req, res) => {
   try {
-    const studentId = req.user?.id;
-    if (!studentId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized. Student not authenticated.",
-      });
-    }
-
+    const studentId = req.user.id;
     const registrations = await getMyProgramRegistrations(studentId);
 
     return res.status(200).json({
@@ -146,10 +130,6 @@ const getMyProgramsController = async (req, res) => {
   }
 };
 
-/**
- * Task 3: Request certificate
- * POST /api/program-registrations/:id/certificate-request
- */
 const requestCertificateController = async (req, res) => {
   try {
     const studentId = req.user?.id;
@@ -177,11 +157,6 @@ const requestCertificateController = async (req, res) => {
   }
 };
 
-/**
- * Task 4: Admin get certificate requests
- * GET /api/program-registrations/certificate-requests
- * or GET /api/admin/certificate-requests
- */
 const getAllCertificateRequestsController = async (req, res) => {
   try {
     const { status } = req.query;
@@ -202,11 +177,6 @@ const getAllCertificateRequestsController = async (req, res) => {
   }
 };
 
-/**
- * Task 4: Admin get single certificate request
- * GET /api/program-registrations/certificate-requests/:id
- * or GET /api/admin/certificate-requests/:id
- */
 const getCertificateRequestByIdController = async (req, res) => {
   try {
     const { id } = req.params;
@@ -224,15 +194,13 @@ const getCertificateRequestByIdController = async (req, res) => {
       message: error.message || "Failed to fetch certificate request.",
     });
   }
-};module.exports = {
+}; module.exports = {
   // Public & General
   register,
   getByProgram,
   getOne,
   search,
   getStatus,
-
-  // Student & Certificate (Controller Named)
   getMyProgramsController,
   requestCertificateController,
   getAllCertificateRequestsController,

@@ -28,6 +28,7 @@ const certificateRoutes = require("./src/routes/certificate.routes.js");
 const webinarRoutes = require("./src/routes/webinar.routes.js");
 const programRoutes = require("./src/routes/program.routes.js");
 const programRegistrationRoutes = require("./src/routes/programRegistration.routes.js");
+const certificateRequestRoutes = require("./src/routes/certificateRequest.routes.js");
 const registrationRoutes = require("./src/routes/registration.routes.js");
 const programCertificateRoutes = require("./src/routes/ProgramCertificate.Route.js");
 
@@ -92,7 +93,8 @@ app.use("/api/certificates", certificateRoutes);
 app.use("/api/program-certificates", programCertificateRoutes);
 app.use("/api/webinar", webinarRoutes);
 app.use("/api/programs", programRoutes);
-app.use("/api/program-registrations", programRegistrationRoutes);
+app.use("/api/programs", programRegistrationRoutes);
+app.use("/api/program-registrations", certificateRequestRoutes);
 app.use("/api/registrations", registrationRoutes);
 
 const PORT = process.env.PORT || 3000;
@@ -114,18 +116,15 @@ const startServer = async () => {
     const paymentRoutes = require("./src/routes/payment.routes.js");
 
     app.use("/api/payments", paymentRoutes);
-  } catch (error) {
-    console.error("Warning: Redis connection failed. Payment routes will be disabled.", error.message);
-  }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log("PORT ENV =", process.env.PORT);
-    console.log(`Server is running on port ${PORT}`);
-  });
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log("PORT ENV =", process.env.PORT);
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to connect to Redis:", error);
+    process.exit(1);
+  }
 };
 
-if (require.main === module) {
-  startServer();
-}
-
-module.exports = app;
+startServer();
