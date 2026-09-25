@@ -131,14 +131,9 @@ const verifyCertificate = async (verificationCode) => {
   };
 };
 
-const {
-  getCertificateForDownload,
-} = require("./ProgramCertificate.Service");
-
 module.exports = {
   createCertificate,
   getMyCertificates,
   getCertificateById,
   verifyCertificate,
-  getCertificateForDownload,
 };

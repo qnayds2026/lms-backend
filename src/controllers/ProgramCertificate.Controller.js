@@ -166,46 +166,6 @@ const rejectCertificateRequestController = async (req, res) => {
   }
 };
 
-/**
- * GET /api/program-certificates/:id/download or /api/certificates/:id/download
- * Download certificate as PDF.
- * Student can download their own certificate; Admin can download any certificate.
- */
-const downloadCertificate = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const requestingUser = req.user;
-
-    const certificate =
-      await programCertificateService.getCertificateForDownload(
-        id,
-        requestingUser,
-      );
-
-    const safeNumber = (
-      certificate.certificateNumber || `cert-${id}`
-    ).replace(/[^a-zA-Z0-9_-]/g, "_");
-    const filename = `QNAYDS_Certificate_${safeNumber}.pdf`;
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${filename}"`,
-    );
-
-    const { buildCertificatePdf } = require("../services/pdf");
-    await buildCertificatePdf(certificate, res);
-  } catch (error) {
-    console.error("Download certificate error:", error);
-    if (!res.headersSent) {
-      return res.status(error.statusCode || 500).json({
-        success: false,
-        message: error.message || "Failed to download certificate.",
-      });
-    }
-  }
-};
-
 module.exports = {
   getMyCertificates,
   getCertificateById,
@@ -213,5 +173,4 @@ module.exports = {
   getCertificateByIdAdmin,
   approveCertificateRequestController,
   rejectCertificateRequestController,
-  downloadCertificate,
 };
