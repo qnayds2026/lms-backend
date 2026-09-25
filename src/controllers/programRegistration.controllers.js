@@ -8,6 +8,8 @@ const {
   requestCertificate,
   getAllCertificateRequests,
   getCertificateRequestById,
+  approveCertificateRequest,
+  rejectCertificateRequest,
 } = require("../services/programRegistration.services");
 
 // ==========================================
@@ -194,7 +196,47 @@ const getCertificateRequestByIdController = async (req, res) => {
       message: error.message || "Failed to fetch certificate request.",
     });
   }
-}; module.exports = {
+};
+
+const approveCertificateRequestController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await approveCertificateRequest(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Certificate request approved successfully.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Approve certificate request error:", error);
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to approve certificate request.",
+    });
+  }
+};
+
+const rejectCertificateRequestController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await rejectCertificateRequest(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Certificate request rejected successfully.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Reject certificate request error:", error);
+    return res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message || "Failed to reject certificate request.",
+    });
+  }
+};
+
+module.exports = {
   // Public & General
   register,
   getByProgram,
@@ -205,6 +247,8 @@ const getCertificateRequestByIdController = async (req, res) => {
   requestCertificateController,
   getAllCertificateRequestsController,
   getCertificateRequestByIdController,
+  approveCertificateRequestController,
+  rejectCertificateRequestController,
 
   // Aliases for convenience / backward-compatibility
   getMyPrograms: getMyProgramsController,
@@ -212,4 +256,6 @@ const getCertificateRequestByIdController = async (req, res) => {
   requestCertificate: requestCertificateController,
   getAllCertificateRequests: getAllCertificateRequestsController,
   getCertificateRequestById: getCertificateRequestByIdController,
+  approveCertificateRequest: approveCertificateRequestController,
+  rejectCertificateRequest: rejectCertificateRequestController,
 };

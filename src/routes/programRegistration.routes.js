@@ -1,25 +1,23 @@
 const express = require("express");
 
 const router = express.Router();
-<<<<<<< HEAD
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const {
+  register,
   getMyProgramsController,
   requestCertificateController,
   getAllCertificateRequestsController,
   getCertificateRequestByIdController,
 } = require("../controllers/programRegistration.controllers");
-=======
-
-const { register } = require("../controllers/programRegistration.controllers");
->>>>>>> origin/henna
 
 // ==========================================
 // External Program Registration
 // ==========================================
 
-<<<<<<< HEAD
+// POST /api/programs/:programId/register
+router.post("/:programId/register", register);
+
 // Task 2: Get logged-in student's external programs
 router.get("/my", auth, role("STUDENT"), getMyProgramsController);
 
@@ -50,9 +48,5 @@ router.get(
   role("ADMIN"),
   getCertificateRequestByIdController,
 );
-=======
-// POST /api/programs/:programId/register
-router.post("/:programId/register", register);
->>>>>>> origin/henna
 
 module.exports = router;

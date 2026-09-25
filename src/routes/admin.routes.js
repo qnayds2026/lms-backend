@@ -7,7 +7,6 @@ const {
   getAllInstructors,
   getInstructorById,
 } = require("../controllers/admin.controller");
-<<<<<<< HEAD
 const {
   getAllCertificateRequestsController,
   getCertificateRequestByIdController,
@@ -16,14 +15,11 @@ const {
   getAllCertificatesAdmin,
   getCertificateByIdAdmin,
 } = require("../controllers/ProgramCertificate.Controller");
-=======
->>>>>>> origin/henna
 
 router.get("/courses", auth, role("ADMIN"), getAllCoursesAdmin);
 router.get("/instructors", auth, role("ADMIN"), getAllInstructors);
 router.get("/instructors/:id", auth, role("ADMIN"), getInstructorById);
 
-<<<<<<< HEAD
 // Task 4: Admin Certificate Requests
 router.get(
   "/certificate-requests",
@@ -42,6 +38,4 @@ router.get(
 router.get("/certificates", auth, role("ADMIN"), getAllCertificatesAdmin);
 router.get("/certificates/:id", auth, role("ADMIN"), getCertificateByIdAdmin);
 
-=======
->>>>>>> origin/henna
 module.exports = router;

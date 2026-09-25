@@ -373,8 +373,6 @@ const getCertificateRequestById = async (registrationId) => {
 
   return formatCertificateRequest(registration);
 };
-<<<<<<< HEAD
-=======
 
 const generateProgramCertificateNumber = async (programId, type) => {
   const year = new Date().getFullYear();
@@ -507,7 +505,6 @@ const rejectCertificateRequest = async (registrationId) => {
   return formatCertificateRequest(updatedRegistration);
 };
 
->>>>>>> origin/henna
 module.exports = {
   registerForProgram,
   getRegistrationsByProgram,
@@ -515,13 +512,10 @@ module.exports = {
   searchRegistrationByEmail,
   getRegistrationStatus,
   matchRegistrationsByEmail,
-  registerForProgram,
-  getRegistrationsByProgram,
-  getRegistrationById,
-  searchRegistrationByEmail,
-  getRegistrationStatus,
   getMyProgramRegistrations,
   requestCertificate,
   getAllCertificateRequests,
   getCertificateRequestById,
+  approveCertificateRequest,
+  rejectCertificateRequest,
 };
