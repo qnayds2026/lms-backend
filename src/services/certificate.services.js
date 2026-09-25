@@ -36,6 +36,7 @@ const createCertificate = async ({ studentId, courseId, enrollmentId }) => {
     data: {
       certificateNumber,
       verificationCode,
+      type: "COURSE",
       studentId: Number(studentId),
       courseId: Number(courseId),
       enrollmentId: Number(enrollmentId),
@@ -56,6 +57,19 @@ const getMyCertificates = async (studentId) => {
           id: true,
           title: true,
           thumbnail: true,
+        },
+      },
+      programRegistration: {
+        include: {
+          program: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              startDate: true,
+              endDate: true,
+            },
+          },
         },
       },
     },
@@ -85,6 +99,20 @@ const getCertificateById = async (studentId, certificateId) => {
           title: true,
           description: true,
           thumbnail: true,
+        },
+      },
+      programRegistration: {
+        include: {
+          program: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              type: true,
+              startDate: true,
+              endDate: true,
+            },
+          },
         },
       },
     },
