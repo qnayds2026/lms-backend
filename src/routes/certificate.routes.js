@@ -11,8 +11,10 @@ router.get(
 // Student's certiauth
 router.get("/my", auth, certificateController.getMyCertificates);
 
-// Student's indiviauthificate
+// Student's individual certificate
 router.get("/:id", auth, certificateController.getCertificateById);
 
+// Download certificate as PDF (Student own / Admin any)
+router.get("/:id/download", auth, certificateController.downloadCertificate);
 
 module.exports = router;

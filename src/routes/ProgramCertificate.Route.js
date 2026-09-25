@@ -7,6 +7,7 @@ const {
   getCertificateById,
   approveCertificateRequestController,
   rejectCertificateRequestController,
+  downloadCertificate,
 } = require("../controllers/ProgramCertificate.Controller");
 
 // ==========================================
@@ -20,6 +21,10 @@ router.get("/my", auth, getMyCertificates);
 // Get single certificate by ID (student ownership verified)
 // GET /api/program-certificates/:id
 router.get("/:id", auth, getCertificateById);
+
+// Download certificate as PDF (student ownership verified / Admin any)
+// GET /api/program-certificates/:id/download
+router.get("/:id/download", auth, downloadCertificate);
 
 // ==========================================
 // Admin APIs

@@ -569,6 +569,127 @@ const getCertificateByIdAdmin = async (certificateId) => {
   return certificate;
 };
 
+/**
+ * Fetch certificate with all details needed for PDF download.
+ * Validates ID format, checks existence, and enforces authorization:
+ * - Admin can download any certificate.
+ * - Student can only download their own certificate.
+ */
+const getCertificateForDownload = async (certificateId, requestingUser) => {
+  const certId = Number(certificateId);
+  if (isNaN(certId) || certId <= 0) {
+    const error = new Error("Invalid certificate ID");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const certificateInclude = {
+    student: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+      },
+    },
+    course: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        thumbnail: true,
+        instructor: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    },
+    enrollment: {
+      select: {
+        id: true,
+        status: true,
+        enrolledAt: true,
+      },
+    },
+    programRegistration: {
+      include: {
+        program: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            type: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
+    },
+  };
+
+  // Primary lookup: By Certificate ID
+  let certificate = await prisma.certificate.findUnique({
+    where: {
+      id: certId,
+    },
+    include: certificateInclude,
+  });
+
+  // Secondary lookup: If not found by Certificate ID, check if ID was provided as ProgramRegistration ID
+  if (!certificate) {
+    certificate = await prisma.certificate.findUnique({
+      where: {
+        programRegistrationId: certId,
+      },
+      include: certificateInclude,
+    });
+  }
+
+  // Tertiary lookup: If not found, check if ID was provided as Enrollment ID (Course)
+  if (!certificate) {
+    certificate = await prisma.certificate.findUnique({
+      where: {
+        enrollmentId: certId,
+      },
+      include: certificateInclude,
+    });
+  }
+
+  if (!certificate) {
+    const error = new Error("Certificate not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!requestingUser) {
+    const error = new Error("Unauthorized. Please log in.");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  // Authorization: Student can only download their own certificate; Admin can download any
+  if (requestingUser.role !== "ADMIN") {
+    const isOwner =
+      certificate.studentId === Number(requestingUser.id) ||
+      certificate.programRegistration?.studentId === Number(requestingUser.id) ||
+      (certificate.programRegistration?.email &&
+        requestingUser.email &&
+        certificate.programRegistration.email.trim().toLowerCase() ===
+          requestingUser.email.trim().toLowerCase());
+
+    if (!isOwner) {
+      const error = new Error(
+        "Forbidden. You can only download your own certificate.",
+      );
+      error.statusCode = 403;
+      throw error;
+    }
+  }
+
+  return certificate;
+};
+
 module.exports = {
   getProgramTypePrefix,
   generateProgramCertificateNumber,
@@ -580,4 +701,5 @@ module.exports = {
   getCertificateById,
   getAllCertificatesAdmin,
   getCertificateByIdAdmin,
+  getCertificateForDownload,
 };
