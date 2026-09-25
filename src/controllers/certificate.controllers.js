@@ -9,6 +9,7 @@ const getMyCertificates = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Certificates fetched successfully.",
+  
       data: certificates,
     });
   } catch (error) {
@@ -45,7 +46,6 @@ const getCertificateById = async (req, res) => {
     });
   }
 };
-
 const verifyCertificate = async (req, res) => {
   try {
     const { verificationCode } = req.params;
@@ -54,19 +54,18 @@ const verifyCertificate = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Certificate verified successfully.",
-      data: result,
+      valid: result.valid,
+      ...(result.valid ? { data: result.data } : { message: result.message }),
     });
   } catch (error) {
     console.error("Verify certificate error:", error);
 
-    return res.status(404).json({
+    return res.status(500).json({
       success: false,
-      message: error.message || "Invalid certificate.",
+      message: "Something went wrong while verifying the certificate.",
     });
   }
 };
-
 module.exports = {
   getMyCertificates,
   getCertificateById,
