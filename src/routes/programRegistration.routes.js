@@ -7,8 +7,6 @@ const {
   requestCertificateController,
   getAllCertificateRequestsController,
   getCertificateRequestByIdController,
-  approveCertificateRequestController,
-  rejectCertificateRequestController,
 } = require("../controllers/programRegistration.controllers");
 
 // ==========================================
@@ -44,22 +42,6 @@ router.get(
   auth,
   role("ADMIN"),
   getCertificateRequestByIdController,
-);
-
-// Task 5: Approve certificate request
-router.patch(
-  "/:id/certificate-request/approve",
-  auth,
-  role("ADMIN"),
-  approveCertificateRequestController,
-);
-
-// Task 5: Reject certificate request
-router.patch(
-  "/:id/certificate-request/reject",
-  auth,
-  role("ADMIN"),
-  rejectCertificateRequestController,
 );
 
 module.exports = router;
