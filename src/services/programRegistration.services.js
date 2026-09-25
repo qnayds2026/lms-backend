@@ -521,6 +521,4 @@ module.exports = {
   requestCertificate,
   getAllCertificateRequests,
   getCertificateRequestById,
-  approveCertificateRequest,
-  rejectCertificateRequest,
 };

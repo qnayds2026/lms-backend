@@ -8,8 +8,6 @@ const {
   requestCertificate,
   getAllCertificateRequests,
   getCertificateRequestById,
-  approveCertificateRequest,
-  rejectCertificateRequest,
 } = require("../services/programRegistration.services");
 
 // ==========================================
