@@ -28,11 +28,15 @@ const registerForProgram = async (programId, data) => {
   });
 
   if (!program) {
-    throw new Error("Program not found");
+    const error = new Error("Program not found");
+    error.statusCode = 404;
+    throw error;
   }
 
   if (!program.isActive) {
-    throw new Error("Program is not active");
+    const error = new Error("Program is not active");
+    error.statusCode = 400;
+    throw error;
   }
 
   const existingRegistration = await prisma.programRegistration.findUnique({
@@ -45,8 +49,15 @@ const registerForProgram = async (programId, data) => {
   });
 
   if (existingRegistration) {
-    throw new Error("You have already registered for this program");
+    const error = new Error("You have already registered for this program");
+    error.statusCode = 400;
+    throw error;
   }
+
+  // Check if student exists with this email to link immediately
+  const existingUser = await prisma.user.findUnique({
+    where: { email: email.trim() },
+  });
 
   const registration = await prisma.programRegistration.create({
     data: {
@@ -54,6 +65,7 @@ const registerForProgram = async (programId, data) => {
       email,
       phone,
       programId: Number(programId),
+      ...(existingUser ? { studentId: existingUser.id } : {}),
     },
   });
 
@@ -72,12 +84,25 @@ const getRegistrationsByProgram = async (programId) => {
   });
 
   if (!program) {
-    throw new Error("Program not found");
+    const error = new Error("Program not found");
+    error.statusCode = 404;
+    throw error;
   }
 
   return await prisma.programRegistration.findMany({
     where: {
       programId: Number(programId),
+    },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+      certificate: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -487,6 +512,11 @@ module.exports = {
   searchRegistrationByEmail,
   getRegistrationStatus,
   matchRegistrationsByEmail,
+  registerForProgram,
+  getRegistrationsByProgram,
+  getRegistrationById,
+  searchRegistrationByEmail,
+  getRegistrationStatus,
   getMyProgramRegistrations,
   requestCertificate,
   getAllCertificateRequests,

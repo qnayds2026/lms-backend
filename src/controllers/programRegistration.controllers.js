@@ -23,15 +23,15 @@ const register = async (req, res) => {
       req.body,
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Registration successful",
       data: registration,
     });
   } catch (error) {
-    res.status(400).json({
+    return res.status(error.statusCode || 400).json({
       success: false,
-      message: error.message,
+      message: error.message || "Registration failed",
     });
   }
 };
@@ -46,7 +46,7 @@ const getByProgram = async (req, res) => {
       req.params.programId,
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: registrations.length,
       data: registrations,
@@ -134,9 +134,15 @@ const getMyProgramsController = async (req, res) => {
 
 const requestCertificateController = async (req, res) => {
   try {
-    const studentId = req.user.id;
-    const { id } = req.params;
+    const studentId = req.user?.id;
+    if (!studentId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Student not authenticated.",
+      });
+    }
 
+    const { id } = req.params;
     const registration = await requestCertificate(studentId, id);
 
     return res.status(200).json({
