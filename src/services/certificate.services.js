@@ -149,3 +149,9 @@ const verifyCertificate = async (verificationCode) => {
     },
   };
 };
+module.exports = {
+  createCertificate,
+  getMyCertificates,
+  getCertificateById,
+  verifyCertificate,
+};
