@@ -327,8 +327,48 @@ const rejectCertificateRequest = async (registrationId) => {
 };
 
 /**
- * GET /api/certificates/my
- * Students can only access their own certificates.
+/**
+ * Format an unissued or pending program registration into a certificate-compatible object
+ */
+const formatUnissuedProgramRegistration = (reg, studentUser, fallbackStudentId) => {
+  const studentNum = reg.studentId || fallbackStudentId;
+  return {
+    id: `reg-${reg.id}`,
+    certificateNumber: null,
+    verificationCode: null,
+    type: reg.program?.type || "PROGRAM",
+    studentId: studentNum,
+    courseId: null,
+    enrollmentId: null,
+    programRegistrationId: reg.id,
+    issuedAt: null,
+    createdAt: reg.createdAt,
+    updatedAt: reg.updatedAt,
+    student: reg.student || studentUser || {
+      id: studentNum,
+      name: reg.name,
+      email: reg.email,
+      phone: reg.phone,
+    },
+    course: null,
+    programRegistration: {
+      id: reg.id,
+      name: reg.name,
+      email: reg.email,
+      phone: reg.phone,
+      studentId: studentNum,
+      programId: reg.programId,
+      certificateRequestStatus: reg.certificateRequestStatus || "PENDING",
+      createdAt: reg.createdAt,
+      updatedAt: reg.updatedAt,
+      program: reg.program,
+    },
+  };
+};
+
+/**
+ * GET /api/certificates/my or /api/program-certificates/my
+ * Students can only access their own certificates and pending program registrations.
  */
 const getMyCertificates = async (studentId) => {
   const studentNum = Number(studentId);
@@ -338,7 +378,14 @@ const getMyCertificates = async (studentId) => {
     throw error;
   }
 
-  return await prisma.certificate.findMany({
+  // 1. Fetch user to obtain email
+  const studentUser = await prisma.user.findUnique({
+    where: { id: studentNum },
+    select: { id: true, name: true, email: true, phone: true },
+  });
+
+  // 2. Fetch issued certificates
+  const issuedCertificates = await prisma.certificate.findMany({
     where: {
       studentId: studentNum,
     },
@@ -370,24 +417,131 @@ const getMyCertificates = async (studentId) => {
       issuedAt: "desc",
     },
   });
+
+  const issuedRegIds = new Set(
+    issuedCertificates
+      .map((c) => c.programRegistrationId)
+      .filter((id) => id != null),
+  );
+
+  // 3. Fetch program registrations that don't have an issued certificate yet
+  const orConditions = [{ studentId: studentNum }];
+  if (studentUser?.email) {
+    orConditions.push({ email: studentUser.email.trim() });
+  }
+
+  const unissuedRegistrations = await prisma.programRegistration.findMany({
+    where: {
+      OR: orConditions,
+      certificate: null,
+    },
+    include: {
+      program: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          type: true,
+          startDate: true,
+          endDate: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  // 4. Format unissued registrations to match certificate structure
+  const formattedUnissued = unissuedRegistrations
+    .filter((reg) => !issuedRegIds.has(reg.id))
+    .map((reg) => formatUnissuedProgramRegistration(reg, studentUser, studentNum));
+
+  return [...issuedCertificates, ...formattedUnissued];
 };
 
 /**
- * GET /api/certificates/:id
- * Students can only access their own certificates.
- * Admins can access any certificate.
+ * GET /api/certificates/:id or /api/program-certificates/:id
+ * Students can only access their own certificates; Admins can access any.
  */
 const getCertificateById = async (certificateId, requestingUser) => {
-  const certId = Number(certificateId);
-  if (isNaN(certId)) {
+  const certIdStr = String(certificateId);
+  const studentNum = requestingUser ? Number(requestingUser.id) : null;
+  const isAdmin = requestingUser && requestingUser.role === "ADMIN";
+
+  let isRegPrefixed = false;
+  let targetRegId = null;
+
+  if (certIdStr.startsWith("reg-")) {
+    isRegPrefixed = true;
+    targetRegId = Number(certIdStr.replace("reg-", ""));
+  }
+
+  // 1. If not reg-prefixed, check in prisma.certificate
+  if (!isRegPrefixed) {
+    const numericCertId = Number(certificateId);
+    if (!isNaN(numericCertId)) {
+      const certificate = await prisma.certificate.findUnique({
+        where: {
+          id: numericCertId,
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
+          course: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              thumbnail: true,
+            },
+          },
+          programRegistration: {
+            include: {
+              program: {
+                select: {
+                  id: true,
+                  title: true,
+                  description: true,
+                  type: true,
+                  startDate: true,
+                  endDate: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (certificate) {
+        // Security check
+        if (!isAdmin && requestingUser && certificate.studentId !== Number(requestingUser.id)) {
+          const error = new Error("Forbidden. You can only access your own certificates.");
+          error.statusCode = 403;
+          throw error;
+        }
+        return certificate;
+      }
+    }
+  }
+
+  // 2. Fallback: Lookup in programRegistration
+  const regIdToSearch = isRegPrefixed ? targetRegId : Number(certificateId);
+  if (isNaN(regIdToSearch)) {
     const error = new Error("Invalid certificate ID");
     error.statusCode = 400;
     throw error;
   }
 
-  const certificate = await prisma.certificate.findUnique({
+  const registration = await prisma.programRegistration.findUnique({
     where: {
-      id: certId,
+      id: regIdToSearch,
     },
     include: {
       student: {
@@ -398,51 +552,60 @@ const getCertificateById = async (certificateId, requestingUser) => {
           phone: true,
         },
       },
-      course: {
+      program: {
         select: {
           id: true,
           title: true,
           description: true,
-          thumbnail: true,
+          type: true,
+          startDate: true,
+          endDate: true,
         },
       },
-      programRegistration: {
-        include: {
-          program: {
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              type: true,
-              startDate: true,
-              endDate: true,
-            },
-          },
-        },
-      },
+      certificate: true,
     },
   });
 
-  if (!certificate) {
+  if (!registration) {
     const error = new Error("Certificate not found");
     error.statusCode = 404;
     throw error;
   }
 
-  // Security check: Students can only access their own certificates
-  if (
-    requestingUser &&
-    requestingUser.role !== "ADMIN" &&
-    certificate.studentId !== Number(requestingUser.id)
-  ) {
-    const error = new Error(
-      "Forbidden. You can only access your own certificates.",
-    );
-    error.statusCode = 403;
-    throw error;
+  // Security check for registration ownership
+  if (!isAdmin && requestingUser) {
+    const isOwner =
+      registration.studentId === studentNum ||
+      (requestingUser.email && registration.email === requestingUser.email.trim());
+    if (!isOwner) {
+      const error = new Error("Forbidden. You can only access your own certificates.");
+      error.statusCode = 403;
+      throw error;
+    }
   }
 
-  return certificate;
+  // If this registration already has an issued certificate, return full certificate with relations
+  if (registration.certificate) {
+    return {
+      ...registration.certificate,
+      student: registration.student || requestingUser,
+      course: null,
+      programRegistration: {
+        id: registration.id,
+        name: registration.name,
+        email: registration.email,
+        phone: registration.phone,
+        studentId: registration.studentId || studentNum,
+        programId: registration.programId,
+        certificateRequestStatus: registration.certificateRequestStatus,
+        createdAt: registration.createdAt,
+        updatedAt: registration.updatedAt,
+        program: registration.program,
+      },
+    };
+  }
+
+  return formatUnissuedProgramRegistration(registration, requestingUser, studentNum);
 };
 
 /**
