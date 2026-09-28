@@ -251,6 +251,15 @@ const approveCertificateRequest = async (registrationId) => {
     throw error;
   }
 
+  if (registration.certificateRequestStatus !== "PENDING") {
+    const error = new Error(
+      `Only pending requests can be approved. Current status: ${registration.certificateRequestStatus}`,
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  
   // Update status to APPROVED
   const updatedRegistration = await prisma.programRegistration.update({
     where: { id: regId },
@@ -309,6 +318,14 @@ const rejectCertificateRequest = async (registrationId) => {
     throw error;
   }
 
+  if (registration.certificateRequestStatus !== "PENDING") {
+    const error = new Error(
+      `Only pending requests can be rejected. Current status: ${registration.certificateRequestStatus}`,
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
   const updatedRegistration = await prisma.programRegistration.update({
     where: { id: regId },
     data: {
@@ -325,7 +342,6 @@ const rejectCertificateRequest = async (registrationId) => {
     registration: updatedRegistration,
   };
 };
-
 /**
  * GET /api/certificates/my
  * Students can only access their own certificates.
