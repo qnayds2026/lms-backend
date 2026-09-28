@@ -301,6 +301,10 @@ const getCertificateById = async (studentId, certificateId) => {
 };
 
 const verifyCertificate = async (verificationCode) => {
+  if (!verificationCode || !verificationCode.trim()) {
+    return { valid: false, message: "Certificate not found" };
+  }
+
   const certificate = await prisma.certificate.findUnique({
     where: {
       verificationCode,
@@ -316,24 +320,38 @@ const verifyCertificate = async (verificationCode) => {
           title: true,
         },
       },
+      programRegistration: {
+        include: {
+          program: {
+            select: {
+              title: true,
+            },
+          },
+        },
+      },
     },
   });
 
   if (!certificate) {
-    throw new Error("Invalid certificate");
+    return { valid: false, message: "Certificate not found" };
   }
+
+  const programName =
+    certificate.course?.title ||
+    certificate.programRegistration?.program?.title ||
+    null;
 
   return {
     valid: true,
-    certificate: {
+    data: {
       certificateNumber: certificate.certificateNumber,
-      studentName: certificate.student.name,
-      courseName: certificate.course.title,
+      studentName: certificate.student?.name || null,
+      programName,
+      type: certificate.type,
       issuedAt: certificate.issuedAt,
     },
   };
 };
-
 module.exports = {
   createCertificate,
   getMyCertificates,
