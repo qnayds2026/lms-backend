@@ -8,7 +8,6 @@ const {
   requestCertificate,
   getAllCertificateRequests,
   getCertificateRequestById,
-
 } = require("../services/programRegistration.services");
 
    const {
@@ -240,6 +239,7 @@ const rejectCertificateRequestController = async (req, res) => {
 };
 
 module.exports = {
+  // Public & General
   register,
   getByProgram,
   getOne,
@@ -251,4 +251,13 @@ module.exports = {
   getCertificateRequestByIdController,
   approveCertificateRequestController,
   rejectCertificateRequestController,
+
+  // Aliases for convenience / backward-compatibility
+  getMyPrograms: getMyProgramsController,
+  getMyProgramRegistrations: getMyProgramsController,
+  requestCertificate: requestCertificateController,
+  getAllCertificateRequests: getAllCertificateRequestsController,
+  getCertificateRequestById: getCertificateRequestByIdController,
+  approveCertificateRequest: approveCertificateRequestController,
+  rejectCertificateRequest: rejectCertificateRequestController,
 };
