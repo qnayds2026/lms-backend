@@ -376,11 +376,21 @@ const getCertificateRequestById = async (registrationId) => {
 
 const generateProgramCertificateNumber = async (programId, type) => {
   const year = new Date().getFullYear();
-  const count = await prisma.certificate.count();
-  return `QNAYDS-${year}-${type || "PRG"}-${String(Number(programId)).padStart(
+  let count = await prisma.certificate.count();
+  let certNum = `QNAYDS-${year}-${type || "PRG"}-${String(Number(programId)).padStart(
     3,
     "0",
   )}-${String(count + 1).padStart(5, "0")}`;
+
+  while (await prisma.certificate.findUnique({ where: { certificateNumber: certNum } })) {
+    count++;
+    certNum = `QNAYDS-${year}-${type || "PRG"}-${String(Number(programId)).padStart(
+      3,
+      "0",
+    )}-${String(count + 1).padStart(5, "0")}`;
+  }
+
+  return certNum;
 };
 
 const approveCertificateRequest = async (registrationId) => {
@@ -414,12 +424,26 @@ const approveCertificateRequest = async (registrationId) => {
 
   let studentId = registration.studentId;
   if (!studentId) {
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { email: registration.email },
     });
-    if (user) {
-      studentId = user.id;
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: registration.name,
+          email: registration.email,
+          phone: registration.phone || null,
+          role: "STUDENT",
+          isActive: true,
+        },
+      });
     }
+    studentId = user.id;
+
+    await prisma.programRegistration.update({
+      where: { id: regId },
+      data: { studentId },
+    });
   }
 
   const updatedRegistration = await prisma.programRegistration.update({
@@ -441,7 +465,10 @@ const approveCertificateRequest = async (registrationId) => {
       registration.programId,
       registration.program.type,
     );
-    const verificationCode = crypto.randomBytes(16).toString("hex");
+    let verificationCode = crypto.randomBytes(16).toString("hex");
+    while (await prisma.certificate.findUnique({ where: { verificationCode } })) {
+      verificationCode = crypto.randomBytes(16).toString("hex");
+    }
 
     certificate = await prisma.certificate.create({
       data: {
@@ -451,6 +478,21 @@ const approveCertificateRequest = async (registrationId) => {
         studentId: Number(studentId),
         programRegistrationId: registration.id,
         issuedAt: new Date(),
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        programRegistration: {
+          include: {
+            program: true,
+          },
+        },
       },
     });
   }

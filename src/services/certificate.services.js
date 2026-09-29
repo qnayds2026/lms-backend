@@ -64,6 +64,7 @@ const formatUnissuedRegistration = (reg, studentUser, fallbackStudentId) => {
       id: studentNum,
       name: reg.name,
       email: reg.email,
+      phone: reg.phone,
     },
     course: null,
     programRegistration: {
@@ -103,6 +104,7 @@ const getMyCertificates = async (studentId) => {
         select: {
           id: true,
           title: true,
+          description: true,
           thumbnail: true,
         },
       },
@@ -112,6 +114,7 @@ const getMyCertificates = async (studentId) => {
             select: {
               id: true,
               title: true,
+              description: true,
               type: true,
               startDate: true,
               endDate: true,
@@ -167,9 +170,10 @@ const getMyCertificates = async (studentId) => {
   return [...issuedCertificates, ...formattedUnissued];
 };
 
-const getCertificateById = async (studentId, certificateId) => {
+const getCertificateById = async (studentId, certificateId, requestingUser = null) => {
   const studentNum = Number(studentId);
   const certIdStr = String(certificateId);
+  const isAdmin = requestingUser && requestingUser.role === "ADMIN";
 
   let isRegPrefixed = false;
   let targetRegId = null;
@@ -183,11 +187,9 @@ const getCertificateById = async (studentId, certificateId) => {
   if (!isRegPrefixed) {
     const certNumId = Number(certificateId);
     if (!isNaN(certNumId)) {
+      const whereClause = isAdmin ? { id: certNumId } : { id: certNumId, studentId: studentNum };
       const certificate = await prisma.certificate.findFirst({
-        where: {
-          id: certNumId,
-          studentId: studentNum,
-        },
+        where: whereClause,
         include: {
           student: {
             select: {
@@ -234,21 +236,22 @@ const getCertificateById = async (studentId, certificateId) => {
     throw new Error("Certificate not found");
   }
 
-  const studentUser = await prisma.user.findUnique({
-    where: { id: studentNum },
-    select: { id: true, name: true, email: true, phone: true },
-  });
+  let registrationWhere = { id: regIdToSearch };
+  if (!isAdmin) {
+    const studentUser = await prisma.user.findUnique({
+      where: { id: studentNum },
+      select: { id: true, name: true, email: true, phone: true },
+    });
 
-  const orConditions = [{ studentId: studentNum }];
-  if (studentUser?.email) {
-    orConditions.push({ email: studentUser.email.trim() });
+    const orConditions = [{ studentId: studentNum }];
+    if (studentUser?.email) {
+      orConditions.push({ email: studentUser.email.trim() });
+    }
+    registrationWhere.OR = orConditions;
   }
 
   const registration = await prisma.programRegistration.findFirst({
-    where: {
-      id: regIdToSearch,
-      OR: orConditions,
-    },
+    where: registrationWhere,
     include: {
       student: {
         select: {
@@ -280,7 +283,7 @@ const getCertificateById = async (studentId, certificateId) => {
   if (registration.certificate) {
     return {
       ...registration.certificate,
-      student: registration.student || studentUser,
+      student: registration.student || (isAdmin ? null : requestingUser),
       course: null,
       programRegistration: {
         id: registration.id,
@@ -297,7 +300,7 @@ const getCertificateById = async (studentId, certificateId) => {
     };
   }
 
-  return formatUnissuedRegistration(registration, studentUser, studentNum);
+  return formatUnissuedRegistration(registration, isAdmin ? registration.student : requestingUser, studentNum);
 };
 
 const verifyCertificate = async (verificationCode) => {

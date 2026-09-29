@@ -30,6 +30,7 @@ const getCertificateById = async (req, res) => {
     const certificate = await certificateService.getCertificateById(
       studentId,
       id,
+      req.user,
     );
 
     return res.status(200).json({
