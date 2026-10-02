@@ -1,5 +1,4 @@
 const prisma = require("../lib/prisma");
-const { createCertificate } = require("./certificate.services");
 
 const completeRecording = async (studentId, recordingId) => {
   const recording = await prisma.recording.findUnique({
@@ -65,7 +64,7 @@ const completeRecording = async (studentId, recordingId) => {
     },
   });
 
-  // Check course completion
+  // Check course progress
   const courseRecordings = await prisma.recording.findMany({
     where: {
       module: {
@@ -93,35 +92,19 @@ const completeRecording = async (studentId, recordingId) => {
 
   const courseCompleted = totalLessons > 0 && completedCount === totalLessons;
 
-  // Mark enrollment completed
-  let certificate = null;
-
-  if (courseCompleted) {
-    const completedEnrollment = await prisma.enrollment.update({
-      where: {
-        studentId_courseId: {
-          studentId: Number(studentId),
-          courseId: recording.module.courseId,
-        },
-      },
-      data: {
-        status: "COMPLETED",
-      },
-    });
-
-    certificate = await createCertificate({
-      studentId,
-      courseId: recording.module.courseId,
-      enrollmentId: completedEnrollment.id,
-    });
-  }
+  // IMPORTANT:
+  // Do NOT automatically mark enrollment as COMPLETED.
+  // Do NOT automatically generate a certificate.
+  //
+  // The student can reach 100% progress while the enrollment
+  // remains ACTIVE because new recordings may be added later.
 
   return {
     progress,
     courseCompleted,
     completedLessons: completedCount,
     totalLessons,
-    certificate,
+    certificate: null,
   };
 };
 
@@ -150,7 +133,7 @@ const getCourseProgress = async (studentId, courseId) => {
     throw new Error("Course not found");
   }
 
-  // Verify active enrollment
+  // Verify enrollment
   const enrollment = await prisma.enrollment.findUnique({
     where: {
       studentId_courseId: {
