@@ -56,6 +56,7 @@ model Course {
   instructorPhone String?
   price           Decimal @db.Decimal(10, 2)
   isPublished     Boolean @default(false)
+  status          CourseStatus @default(ONGOING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -357,6 +358,11 @@ enum LiveClassStatus {
   SCHEDULED
   LIVE
   ENDED
+}
+
+enum CourseStatus {
+  ONGOING
+  COMPLETED
 }
 
 enum EnrollmentStatus {

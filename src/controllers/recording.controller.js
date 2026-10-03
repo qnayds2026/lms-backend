@@ -103,7 +103,10 @@ async function getRecordingsByModule(req, res) {
         },
       });
 
-      if (!enrollment || enrollment.status !== "ACTIVE") {
+      if (
+          !enrollment ||
+          !["ACTIVE", "COMPLETED"].includes(enrollment.status)
+        ) {
         return res.status(403).json({
           success: false,
           message: "Course access required",

@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { completeEligibleEnrollments } = require("../services/courseCompletion.services");
 
 // Create course
 const createCourse = async (req, res) => {
@@ -186,6 +187,7 @@ const updateCourse = async (req, res) => {
       isPublished,
       communityLink,
       instructorPhone,
+      status,
     } = req.body;
     const data = {};
 
@@ -220,8 +222,40 @@ const updateCourse = async (req, res) => {
           .status(403)
           .json({ message: "Only admins can change publish status" });
       }
+            // A course with enrolled students must never go back to Draft
+      if (Boolean(isPublished) === false && course.isPublished) {
+        const enrolledCount = await prisma.enrollment.count({
+          where: { courseId: parsedId },
+        });
+
+        if (enrolledCount > 0) {
+          return res.status(400).json({
+            message:
+              "This course has enrolled students and cannot be moved to Draft.",
+          });
+        }
+      }
       data.isPublished = Boolean(isPublished);
     }
+    // Only admins can change course status. COMPLETED finalizes the course for
+    // certificate eligibility; it never changes any student's progress.
+    if (status !== undefined) {
+      if (req.user.role !== "ADMIN") {
+        return res
+          .status(403)
+          .json({ message: "Only admins can change course status" });
+      }
+
+      if (!["ONGOING", "COMPLETED"].includes(status)) {
+        return res.status(400).json({
+          message: "status must be either ONGOING or COMPLETED",
+        });
+      }
+
+      data.status = status;
+    }
+
+      
 
     const updated = await prisma.course.update({
       where: { id: parsedId },
@@ -235,11 +269,21 @@ const updateCourse = async (req, res) => {
         },
       },
     });
+    // Finalizing the course: complete the enrollment and issue the certificate
+    // ONLY for students who are already at 100%. Students with pending
+    // recordings are left untouched. Safe to repeat.
+    if (status === "COMPLETED") {
+      const { completedStudents, failed } =
+        await completeEligibleEnrollments(parsedId);
+      return res.json({ ...updated, completedStudents, failed });
+    }
+
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 // Delete course (and everything that references it, to avoid foreign key
 // constraint errors — recordings, modules, live classes, enrollments, then

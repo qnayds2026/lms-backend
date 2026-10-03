@@ -67,7 +67,7 @@ const getMyCourses = async (studentId) => {
   const enrollments = await prisma.enrollment.findMany({
     where: {
       studentId,
-      status: "ACTIVE",
+      status: { in: ["ACTIVE", "COMPLETED"] },
     },
     include: {
       course: true,
