@@ -1,24 +1,50 @@
 const crypto = require("crypto");
 const prisma = require("../lib/prisma");
 
-const generateCertificateNumber = async (courseId) => {
+const generateCertificateNumber = async (courseId, db = prisma) => {
   const year = new Date().getFullYear();
 
-  const count = await prisma.certificate.count({
+  const count = await db.certificate.count({
     where: {
       courseId: Number(courseId),
     },
   });
 
-  return `QNAYDS-${year}-${String(Number(courseId)).padStart(
-    3,
-    "0",
-  )}-${String(count + 1).padStart(5, "0")}`;
+  let certificateNumber = `QNAYDS-${year}-${String(
+    Number(courseId),
+  ).padStart(3, "0")}-${String(count + 1).padStart(5, "0")}`;
+
+  let existingCertificate = await db.certificate.findUnique({
+    where: {
+      certificateNumber,
+    },
+  });
+
+  let sequence = count + 1;
+
+  while (existingCertificate) {
+    sequence += 1;
+
+    certificateNumber = `QNAYDS-${year}-${String(
+      Number(courseId),
+    ).padStart(3, "0")}-${String(sequence).padStart(5, "0")}`;
+
+    existingCertificate = await db.certificate.findUnique({
+      where: {
+        certificateNumber,
+      },
+    });
+  }
+
+  return certificateNumber;
 };
 
-const createCertificate = async ({ studentId, courseId, enrollmentId }) => {
+const createCertificate = async (
+  { studentId, courseId, enrollmentId },
+  db = prisma,
+) => {
   // Prevent duplicate certificate
-  const existingCertificate = await prisma.certificate.findUnique({
+  const existingCertificate = await db.certificate.findUnique({
     where: {
       enrollmentId: Number(enrollmentId),
     },
@@ -28,11 +54,11 @@ const createCertificate = async ({ studentId, courseId, enrollmentId }) => {
     return existingCertificate;
   }
 
-  const certificateNumber = await generateCertificateNumber(courseId);
+  const certificateNumber = await generateCertificateNumber(courseId, db);
 
   const verificationCode = crypto.randomBytes(16).toString("hex");
 
-  const certificate = await prisma.certificate.create({
+  const certificate = await db.certificate.create({
     data: {
       certificateNumber,
       verificationCode,

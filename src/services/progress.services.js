@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { tryCompleteEnrollment } = require("./courseCompletion.services");
 
 const completeRecording = async (studentId, recordingId) => {
   const recording = await prisma.recording.findUnique({
@@ -40,7 +41,9 @@ const completeRecording = async (studentId, recordingId) => {
     throw new Error("You are not enrolled in this course");
   }
 
-  if (enrollment.status !== "ACTIVE") {
+  // Lifetime access: ACTIVE and COMPLETED students can both watch and
+  // re-watch recordings, including ones added after they got their certificate.
+  if (enrollment.status !== "ACTIVE" && enrollment.status !== "COMPLETED") {
     throw new Error("Your enrollment is not active");
   }
 
@@ -64,7 +67,7 @@ const completeRecording = async (studentId, recordingId) => {
     },
   });
 
-  // Check course progress
+  // Recalculate current course progress
   const courseRecordings = await prisma.recording.findMany({
     where: {
       module: {
@@ -92,12 +95,21 @@ const completeRecording = async (studentId, recordingId) => {
 
   const courseCompleted = totalLessons > 0 && completedCount === totalLessons;
 
-  // IMPORTANT:
-  // Do NOT automatically mark enrollment as COMPLETED.
-  // Do NOT automatically generate a certificate.
-  //
-  // The student can reach 100% progress while the enrollment
-  // remains ACTIVE because new recordings may be added later.
+  // Reaching 100% alone is not enough. Only when the admin has also finalized
+  // the course does the enrollment become COMPLETED and the certificate get
+  // generated (in one transaction, never twice for the same enrollment).
+  // If the course is not finalized yet, the enrollment stays ACTIVE and no
+  // certificate is created; finalizing the course later issues it.
+  let certificate = null;
+
+  if (courseCompleted) {
+    const result = await tryCompleteEnrollment({
+      studentId: Number(studentId),
+      courseId: recording.module.courseId,
+      enrollmentId: enrollment.id,
+    });
+    certificate = result.certificate;
+  }
 
   return {
     progress,

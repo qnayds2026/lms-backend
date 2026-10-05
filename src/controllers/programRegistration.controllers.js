@@ -8,10 +8,12 @@ const {
   requestCertificate,
   getAllCertificateRequests,
   getCertificateRequestById,
-  approveCertificateRequest,
-  rejectCertificateRequest,
 } = require("../services/programRegistration.services");
 
+   const {
+     approveCertificateRequest,
+     rejectCertificateRequest,
+   } = require("../services/ProgramCertificate.Service");
 // ==========================================
 // Registration (Task 2)
 // ==========================================

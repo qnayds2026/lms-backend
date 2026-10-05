@@ -5,7 +5,7 @@ const registrationController = require("../controllers/programRegistration.contr
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 
-// Admin: Create Program
+// Create Program (Admin)
 router.post("/", auth, role("ADMIN"), programController.create);
 
 // Get All Programs
@@ -14,13 +14,13 @@ router.get("/", programController.getAll);
 // Get Single Program
 router.get("/:id", programController.getOne);
 
-// Admin: Update Program
+// Update Program (Admin)
 router.patch("/:id", auth, role("ADMIN"), programController.update);
 
-// Admin: Activate Program
+// Activate Program (Admin)
 router.patch("/:id/activate", auth, role("ADMIN"), programController.activate);
 
-// Admin: Deactivate Program
+// Deactivate Program (Admin)
 router.patch("/:id/deactivate", auth, role("ADMIN"), programController.deactivate);
 
 // Public: Register for a Program (external landing page)
