@@ -116,7 +116,7 @@ const completeRecording = async (studentId, recordingId) => {
     courseCompleted,
     completedLessons: completedCount,
     totalLessons,
-    certificate,
+    certificate: null,
   };
 };
 

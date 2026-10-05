@@ -6,27 +6,38 @@ const certificateSelect = {
   verificationCode: true,
   type: true,
   issuedAt: true,
+  createdAt: true,
+  updatedAt: true,
   student: {
     select: {
       id: true,
       name: true,
       email: true,
+      phone: true,
     },
   },
   course: {
     select: {
       id: true,
       title: true,
+      description: true,
+      thumbnail: true,
     },
   },
   programRegistration: {
     select: {
       id: true,
+      name: true,
+      email: true,
+      phone: true,
       program: {
         select: {
           id: true,
           title: true,
+          description: true,
           type: true,
+          startDate: true,
+          endDate: true,
         },
       },
     },

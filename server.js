@@ -27,10 +27,8 @@ const progressRoutes = require("./src/routes/progress.routes.js");
 const certificateRoutes = require("./src/routes/certificate.routes.js");
 const webinarRoutes = require("./src/routes/webinar.routes.js");
 const programRoutes = require("./src/routes/program.routes.js");
-const programRegistrationRoutes = require("./src/routes/programRegistration.routes.js");
 const certificateRequestRoutes = require("./src/routes/certificateRequest.routes.js");
 const registrationRoutes = require("./src/routes/registration.routes.js");
-const programCertificateRoutes = require("./src/routes/ProgramCertificate.Route.js");
 const adminCertificateRoutes = require("./src/routes/adminCertificate.routes.js");
 
 const app = express();
@@ -92,11 +90,9 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/certificates", certificateRoutes);
-app.use("/api/program-certificates", programCertificateRoutes);
 app.use("/api/admin/certificates", adminCertificateRoutes);
 app.use("/api/webinar", webinarRoutes);
 app.use("/api/programs", programRoutes);
-app.use("/api/programs", programRegistrationRoutes);
 app.use("/api/program-registrations", certificateRequestRoutes);
 app.use("/api/registrations", registrationRoutes);
 
